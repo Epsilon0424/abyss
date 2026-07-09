@@ -897,15 +897,13 @@ div[data-baseweb="tab-panel"][aria-busy="true"] *{
   padding-bottom: 0 !important;
 }
 
-/* 기본 탭: 세로 gap을 고정값(8px)으로 못박아 Streamlit 기본 gap에 의존하지 않게 한다.
-   기본 탭만 키 컨테이너가 없어 Streamlit 기본 gap(1.48.1=14px)을 그대로 따라가서,
-   버전(로컬 vs Cloud)에 따라 간격이 벌어지는 문제를 방지한다.
-   gap:0은 너무 좁고 14px는 너무 넓어, 로컬 정상 화면과 맞는 8px로 설정.
-   (행 간격이 여전히 안 맞으면 이 8px 값만 조절하면 됨) */
-.st-key-panel_select div[data-testid="stTabs"] div[data-baseweb="tab-panel"] div[data-testid="stVerticalBlock"]{
-  gap: 8px !important;
+/* 기본 탭: 세부사항/Setting 탭과 동일하게 세로 gap을 0으로 고정.
+   기본 탭만 키 컨테이너가 없어 Streamlit 기본 gap을 따라가므로,
+   버전(로컬 vs Cloud)에 따라 간격이 벌어지는 문제를 방지한다. */
+.st-key-panel_select div[data-testid="stTabs"] div[data-baseweb="tab-panel"]:first-of-type div[data-testid="stVerticalBlock"]{
+  gap: 0 !important;
 }
-.st-key-panel_select div[data-testid="stTabs"] div[data-baseweb="tab-panel"] div[data-testid="stMarkdownContainer"]:has(.ctl-label){
+.st-key-panel_select div[data-testid="stTabs"] div[data-baseweb="tab-panel"]:first-of-type div[data-testid="stMarkdownContainer"]:has(.ctl-label){
   margin-bottom: 0 !important;
 }
 

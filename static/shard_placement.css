@@ -1,0 +1,2344 @@
+/* Solver-specific styles - extends style.css */
+
+/* Grid Section */
+.grid-section {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.grid-section h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 1.5em;
+}
+
+.grid-section p {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 1em;
+}
+
+.locked-info {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    color: #856404;
+    font-size: 0.95em;
+    text-align: center;
+}
+
+.pieces-info {
+    background: #d1ecf1;
+    border: 2px solid #17a2b8;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    color: #0c5460;
+    font-size: 0.95em;
+    line-height: 1.6;
+}
+
+/* Grid */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(7, 45px);
+    grid-template-rows: repeat(7, 45px);
+    gap: 3px;
+    margin: 20px auto;
+    width: fit-content;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.grid-cell {
+    width: 45px;
+    height: 45px;
+    background-color: #ecf0f1;
+    border: 2px solid #bdc3c7;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.grid-cell:hover {
+    transform: scale(1.05);
+    border-color: #667eea;
+}
+
+.grid-cell.unlocked {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.grid-cell.locked {
+    position: relative;
+    cursor: not-allowed;
+}
+
+.grid-cell.locked::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(189, 195, 199, 0.3),
+        rgba(189, 195, 199, 0.3) 8px,
+        rgba(127, 140, 141, 0.3) 8px,
+        rgba(127, 140, 141, 0.3) 16px
+    );
+    pointer-events: none;
+}
+
+.grid-cell.locked:hover {
+    border-color: #ffc107;
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+
+/* Grid Buttons */
+.grid-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.grid-buttons button {
+    flex: 1;
+    max-width: 200px;
+}
+
+/* Pieces Section */
+.pieces-section {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    margin-bottom: 30px;
+}
+
+.pieces-section h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.pieces-section p {
+    color: #666;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 1em;
+}
+
+/* Pieces Buttons */
+.pieces-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.pieces-buttons button {
+    flex: 1;
+    max-width: 300px;
+}
+
+/* Palette */
+.palette {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    margin-top: 20px;
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.piece-section {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.piece-section h4 {
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.piece-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.piece-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f8f9fa, #ffffff);
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.piece-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    border-color: #667eea;
+}
+
+.piece-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #ddd;
+    background-color: #ecf0f1;
+    border-radius: 8px;
+    padding: 10px;
+    width: 120px;
+    height: 120px;
+    box-sizing: border-box;
+}
+
+.piece-preview > div {
+    display: grid;
+}
+
+.preview-cell {
+    width: 20px;
+    height: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-sizing: border-box;
+    border-radius: 3px;
+}
+
+.piece-count-input,
+.piece-score-input {
+    width: 100%;
+    padding: 6px;
+    border-radius: 5px;
+    border: 2px solid #ddd;
+    text-align: center;
+    font-size: 0.9em;
+    font-weight: bold;
+    transition: border-color 0.3s ease;
+}
+
+.piece-count-input:focus,
+.piece-score-input:focus {
+    outline: none;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.piece-score-input {
+    border-color: #f39c12;
+}
+
+.piece-score-input:focus {
+    border-color: transparent;
+    box-shadow: none;
+}
+
+/* Solver Section */
+.solver-section {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.solver-section h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+}
+
+.solve-btn {
+    font-size: 1.2em;
+    padding: 15px 40px;
+    margin-bottom: 20px;
+}
+
+.solution-summary {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #667eea;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Solutions Container */
+.solutions-container {
+    background: white;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    margin-bottom: 30px;
+}
+
+#solutions-container:empty {
+    display: none;
+}
+
+.solutions-container::before {
+    content: '해결책';
+    display: block;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#solutions-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 25px;
+    justify-content: center;
+}
+
+.solution-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.3s ease;
+}
+
+.solution-wrapper:hover {
+    transform: scale(1.05);
+}
+
+.solution-header {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.solution-number {
+    font-size: 1em;
+    font-weight: bold;
+    color: white;
+}
+
+.solution-stats {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.solution-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 35px);
+    grid-template-rows: repeat(7, 35px);
+    gap: 0;
+    border: 3px solid #667eea;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.solution-cell {
+    width: 35px;
+    height: 35px;
+    background: #ecf0f1;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(7, 35px);
+        grid-template-rows: repeat(7, 35px);
+    }
+
+    .grid-cell {
+        width: 35px;
+        height: 35px;
+    }
+
+    .palette {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+
+    .solution-grid {
+        grid-template-columns: repeat(7, 30px);
+        grid-template-rows: repeat(7, 30px);
+    }
+
+    .solution-cell {
+        width: 30px;
+        height: 30px;
+        font-size: 0.7em !important;
+    }
+
+    .solution-header {
+        padding: 8px;
+    }
+
+    .solution-number {
+        font-size: 0.9em;
+    }
+
+    .solution-stats {
+        font-size: 0.75em;
+    }
+}
+
+/* Scrollbar styling for palette */
+.palette::-webkit-scrollbar {
+    width: 8px;
+}
+
+.palette::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.palette::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 10px;
+}
+
+.palette::-webkit-scrollbar-thumb:hover {
+    background: #764ba2;
+}
+
+/* cookie-sim: result split layout fix
+   Split the result area exactly into left/right halves.
+   Left half = bonus/stat box fills the side. Right half = board centered. */
+.cs-result-card .solutions-container {
+    align-items: stretch !important;
+}
+.cs-result-card .solution-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    align-self: stretch !important;
+    min-height: 0 !important;
+}
+.cs-result-card .cs-glass-carousel {
+    position: relative !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-height: 200px !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-glass-carousel .cs-glass-pages {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 200px !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-glass-pages > div {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 200px !important;
+    box-sizing: border-box !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+}
+.cs-result-card .cs-glass-pages > div:not([style*="display: none"]) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    column-gap: 8px !important;
+}
+.cs-result-card .cs-glass-pages > div > .cs-set-bonus-box {
+    grid-column: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 100% !important;
+    min-height: 200px !important;
+    align-self: stretch !important;
+    justify-self: stretch !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    flex: none !important;
+}
+.cs-result-card .cs-glass-pages > div > .solution-grid {
+    grid-column: 2 !important;
+    justify-self: center !important;
+    align-self: center !important;
+    flex: none !important;
+    margin: 0 !important;
+}
+
+/* cookie-sim: add the same soft panel behind the placement board */
+.cs-result-card .cs-glass-pages > div::before {
+    content: "" !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 200px !important;
+    align-self: stretch !important;
+    justify-self: stretch !important;
+    background: #fff7f7 !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+    z-index: 0 !important;
+}
+.cs-result-card .cs-glass-pages > div > .cs-set-bonus-box {
+    grid-row: 1 !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+.cs-result-card .cs-glass-pages > div > .solution-grid {
+    grid-row: 1 !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+body.cs-theme-dark .cs-result-card .cs-glass-pages > div::before {
+    background: #3a3d42 !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-glass-pages > div::before {
+        background: #3a3d42 !important;
+    }
+}
+.cs-result-card .cs-glass-carousel > .cs-glass-arrow {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 80 !important;
+    box-shadow: none !important;
+}
+.cs-result-card .cs-glass-carousel > .cs-glass-arrow-left,
+.cs-result-card .cs-glass-carousel > .cs-glass-arrow:first-child {
+    left: -15px !important;
+    right: auto !important;
+}
+.cs-result-card .cs-glass-carousel > .cs-glass-arrow-right,
+.cs-result-card .cs-glass-carousel > .cs-glass-arrow:last-child {
+    left: auto !important;
+    right: -15px !important;
+}
+@media (max-width: 430px) {
+    .cs-result-card .cs-glass-pages > div:not([style*="display: none"]) {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    }
+    .cs-result-card .cs-glass-pages > div > .cs-set-bonus-box {
+        min-width: 0 !important;
+        max-width: none !important;
+    }
+}
+
+/* cookie-sim: result carousel arrows - transparent circle, keep arrow only */
+.cs-result-card .cs-glass-carousel > .cs-glass-arrow,
+.cs-result-card .cs-glass-carousel > .cs-glass-arrow:hover,
+.cs-result-card .cs-glass-carousel > .cs-glass-arrow:focus,
+.cs-result-card .cs-glass-carousel > .cs-glass-arrow:active {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    outline: 0 !important;
+}
+body.cs-theme-dark .cs-result-card .cs-glass-carousel > .cs-glass-arrow,
+body.cs-theme-dark .cs-result-card .cs-glass-carousel > .cs-glass-arrow:hover,
+body.cs-theme-dark .cs-result-card .cs-glass-carousel > .cs-glass-arrow:focus,
+body.cs-theme-dark .cs-result-card .cs-glass-carousel > .cs-glass-arrow:active {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-glass-carousel > .cs-glass-arrow,
+    body.cs-theme-system .cs-result-card .cs-glass-carousel > .cs-glass-arrow:hover,
+    body.cs-theme-system .cs-result-card .cs-glass-carousel > .cs-glass-arrow:focus,
+    body.cs-theme-system .cs-result-card .cs-glass-carousel > .cs-glass-arrow:active {
+        background: transparent !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
+}
+
+
+
+/* cookie-sim: keep board vertically centered inside the right pink panel */
+.cs-result-card .cs-glass-pages > div:not([style*="display: none"]) {
+    align-items: center !important;
+}
+.cs-result-card .cs-glass-pages > div > .cs-set-bonus-box,
+.cs-result-card .cs-glass-pages > div::before {
+    align-self: stretch !important;
+}
+.cs-result-card .cs-glass-pages > div > .solution-grid {
+    align-self: center !important;
+    justify-self: center !important;
+}
+
+
+
+/* cookie-sim: responsive smaller result board + center in right panel */
+.cs-result-card .cs-glass-pages > div:not([style*="display: none"]) {
+    grid-template-rows: minmax(200px, 1fr) !important;
+    align-items: center !important;
+    align-content: stretch !important;
+}
+.cs-result-card .cs-glass-pages > div > .cs-set-bonus-box,
+.cs-result-card .cs-glass-pages > div::before {
+    align-self: stretch !important;
+}
+.cs-result-card .cs-glass-carousel .solution-grid,
+.cs-result-card .cs-glass-pages .solution-grid,
+.cs-result-card .cs-glass-pages > div > .solution-grid,
+.cs-result-card .solution-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(7, minmax(0, 1fr)) !important;
+    width: min(168px, calc(100% - 16px)) !important;
+    min-width: 0 !important;
+    max-width: 168px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center !important;
+    justify-self: center !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    flex: 0 1 auto !important;
+}
+.cs-result-card .cs-glass-carousel .solution-cell,
+.cs-result-card .cs-glass-pages .solution-cell,
+.cs-result-card .cs-glass-pages > div > .solution-grid .solution-cell,
+.cs-result-card .solution-cell {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    box-sizing: border-box !important;
+}
+
+
+
+/* cookie-sim: final responsive board shrink + right-panel title */
+.cs-result-card .cs-glass-pages > div:not([style*="display: none"]) {
+    grid-template-rows: minmax(200px, 1fr) !important;
+    align-items: center !important;
+    align-content: stretch !important;
+}
+.cs-result-card .cs-glass-pages > div::after {
+    content: "Placement Result" !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    align-self: start !important;
+    justify-self: start !important;
+    margin: 13px 0 0 16px !important;
+    color: #374151 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    position: relative !important;
+    z-index: 3 !important;
+    pointer-events: none !important;
+}
+body.cs-theme-dark .cs-result-card .cs-glass-pages > div::after {
+    color: #f3f4f6 !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-glass-pages > div::after {
+        color: #f3f4f6 !important;
+    }
+}
+.cs-result-card .cs-glass-pages > div > .cs-set-bonus-box,
+.cs-result-card .cs-glass-pages > div::before {
+    align-self: stretch !important;
+}
+.cs-result-card .cs-glass-carousel .solution-grid,
+.cs-result-card .cs-glass-pages .solution-grid,
+.cs-result-card .cs-glass-pages > div > .solution-grid,
+.cs-result-card .solution-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(7, minmax(0, 1fr)) !important;
+    width: min(160px, 74%) !important;
+    min-width: 0 !important;
+    max-width: 160px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center !important;
+    justify-self: center !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    flex: 0 1 auto !important;
+    transform: translateY(10px) !important;
+}
+.cs-result-card .cs-glass-carousel .solution-cell,
+.cs-result-card .cs-glass-pages .solution-cell,
+.cs-result-card .cs-glass-pages > div > .solution-grid .solution-cell,
+.cs-result-card .solution-cell {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    aspect-ratio: auto !important;
+    box-sizing: border-box !important;
+}
+
+
+/* cookie-sim: when the board shrinks, shrink the numbers inside it too */
+.cs-result-card .solution-grid {
+    container-type: inline-size !important;
+}
+.cs-result-card .solution-grid .solution-cell,
+.cs-result-card .solution-grid .solution-cell > span {
+    font-size: clamp(6px, 6.1cqw, 11px) !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+.cs-result-card .solution-grid .solution-cell {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+.cs-result-card .cs-glass-pages > div {
+    min-width: 0 !important;
+}
+.cs-result-card .cs-glass-pages > div > .solution-grid {
+    max-width: min(160px, calc(100% - 24px)) !important;
+}
+
+/* cookie-sim: recognized pieces filter dropdown - slightly shorter, same design */
+#recognized-piece-filter-wrap .cs-modal-select-button {
+    height: 34px !important;
+    line-height: 34px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+#recognized-piece-filter-wrap .cs-modal-select-menu {
+    max-height: min(var(--cs-menu-max-h, 220px), 220px) !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+#recognized-piece-filter-wrap .cs-modal-select-item {
+    touch-action: pan-y !important;
+}
+
+
+/* cookie-sim: transparent touch shield behind custom dropdown menus.
+   It blocks taps from reaching shard cards below while the menu is open. */
+.cs-modal-select-backdrop,
+.cs-palette-dropdown-backdrop {
+    display: none !important;
+    position: fixed !important;
+    inset: 0 !important;
+    background: transparent !important;
+    z-index: 10055 !important;
+    pointer-events: auto !important;
+    touch-action: none !important;
+}
+.cs-modal-select-dropdown.open .cs-modal-select-backdrop,
+.cs-palette-dropdown.open .cs-palette-dropdown-backdrop {
+    display: block !important;
+}
+.cs-modal-select-menu,
+.cs-palette-dropdown-menu {
+    z-index: 10060 !important;
+}
+
+
+/* cookie-sim: stat editor dropdown touch shield */
+.cs-stat-select-backdrop {
+    background: transparent !important;
+    pointer-events: auto !important;
+    touch-action: none !important;
+}
+
+/* cookie-sim: single result layout + collapsible stat detail */
+.cs-result-card .cs-glass-carousel.cs-glass-single {
+    position: relative !important;
+    display: flex !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    flex: 1 1 auto !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages > .cs-glass-single-page,
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages > div:not([style*="display: none"]).cs-glass-single-page {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 10px 10px 12px !important;
+    background: #fff7f7 !important;
+    border-radius: 10px !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages > .cs-glass-single-page::before,
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages > .cs-glass-single-page::after {
+    content: none !important;
+    display: none !important;
+}
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-set-bonus-box:not(.cs-stat-legend) {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-set-bonus-box:not(.cs-stat-legend) > div:first-child,
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-set-bonus-box:not(.cs-stat-legend) > div[style*="height: 1px"] {
+    display: none !important;
+}
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-set-bonus-box:not(.cs-stat-legend) > div:not(:first-child):not([style*="height: 1px"]) {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 4px 8px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    color: #374151 !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-board-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    width: 100% !important;
+    min-height: 182px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-board-title {
+    align-self: flex-start !important;
+    margin: 0 0 0 4px !important;
+    color: #374151 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+}
+.cs-result-card .cs-glass-carousel.cs-glass-single .solution-grid,
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages .solution-grid,
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages > div > .solution-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(7, minmax(0, 1fr)) !important;
+    width: 168px !important;
+    min-width: 168px !important;
+    max-width: 168px !important;
+    height: 168px !important;
+    min-height: 168px !important;
+    max-height: 168px !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center !important;
+    justify-self: center !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    box-sizing: content-box !important;
+    flex: 0 0 auto !important;
+}
+.cs-result-card .cs-glass-carousel.cs-glass-single .solution-cell,
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages .solution-cell,
+.cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages > div > .solution-grid .solution-cell {
+    width: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-stat-details {
+    width: 100% !important;
+    max-width: 320px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-stat-toggle {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    border: 0 !important;
+    border-radius: 9px !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+    color: #374151 !important;
+    padding: 7px 10px !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-stat-toggle:hover {
+    color: #ff4048 !important;
+}
+.cs-result-card .cs-stat-toggle-arrow {
+    font-size: 10px !important;
+    line-height: 1 !important;
+    flex: 0 0 auto !important;
+}
+.cs-result-card .cs-stat-detail-content {
+    margin-top: 7px !important;
+    padding: 8px !important;
+    border-radius: 9px !important;
+    background: rgba(255, 255, 255, 0.62) !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-stat-detail-content .cs-stat-legend {
+    width: 100% !important;
+    margin: 0 0 8px 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+}
+.cs-result-card .cs-stat-detail-content .cs-stat-legend > div:first-child {
+    margin-bottom: 6px !important;
+}
+.cs-result-card .cs-stat-detail-content .cs-stat-legend-line {
+    margin: 1px 0 !important;
+}
+.cs-result-card .cs-stat-detail-content .solution-grid {
+    margin-top: 8px !important;
+}
+body.cs-theme-dark .cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages > .cs-glass-single-page {
+    background: #3a3d42 !important;
+}
+body.cs-theme-dark .cs-result-card .cs-board-title,
+body.cs-theme-dark .cs-result-card .cs-stat-toggle,
+body.cs-theme-dark .cs-result-card .cs-glass-carousel.cs-glass-single .cs-set-bonus-box:not(.cs-stat-legend) > div:not(:first-child):not([style*="height: 1px"]) {
+    color: #f3f4f6 !important;
+}
+body.cs-theme-dark .cs-result-card .cs-stat-toggle,
+body.cs-theme-dark .cs-result-card .cs-stat-detail-content,
+body.cs-theme-dark .cs-result-card .cs-glass-carousel.cs-glass-single .cs-set-bonus-box:not(.cs-stat-legend) > div:not(:first-child):not([style*="height: 1px"]) {
+    background: rgba(48, 50, 54, 0.88) !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-glass-carousel.cs-glass-single .cs-glass-pages > .cs-glass-single-page {
+        background: #3a3d42 !important;
+    }
+    body.cs-theme-system .cs-result-card .cs-board-title,
+    body.cs-theme-system .cs-result-card .cs-stat-toggle,
+    body.cs-theme-system .cs-result-card .cs-glass-carousel.cs-glass-single .cs-set-bonus-box:not(.cs-stat-legend) > div:not(:first-child):not([style*="height: 1px"]) {
+        color: #f3f4f6 !important;
+    }
+    body.cs-theme-system .cs-result-card .cs-stat-toggle,
+    body.cs-theme-system .cs-result-card .cs-stat-detail-content,
+    body.cs-theme-system .cs-result-card .cs-glass-carousel.cs-glass-single .cs-set-bonus-box:not(.cs-stat-legend) > div:not(:first-child):not([style*="height: 1px"]) {
+        background: rgba(48, 50, 54, 0.88) !important;
+    }
+}
+
+/* cookie-sim: collapsed result summary + original two-column details */
+.cs-result-card .cs-result-collapsible {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-summary-chips {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    margin: 0 !important;
+    padding: 2px 2px 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-summary-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+    padding: 5px 9px !important;
+    border-radius: 999px !important;
+    background: #fff7f7 !important;
+    color: #374151 !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+}
+.cs-result-card .cs-result-summary-chip-color {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 4px !important;
+    border: 1px solid rgba(17, 24, 39, 0.08) !important;
+    flex: 0 0 12px !important;
+    display: inline-block !important;
+}
+.cs-result-card .cs-result-toggle-wrap {
+    width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-toggle-button {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    background: #fff7f7 !important;
+    color: #374151 !important;
+    padding: 8px 11px !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-toggle-button:hover {
+    color: #ff4048 !important;
+}
+.cs-result-card .cs-result-toggle-arrow {
+    font-size: 10px !important;
+    line-height: 1 !important;
+    flex: 0 0 auto !important;
+}
+.cs-result-card .cs-result-toggle-content {
+    width: 100% !important;
+    margin-top: 7px !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-detail-grid {
+    width: 100% !important;
+    min-height: 200px !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-detail-info,
+.cs-result-card .cs-result-detail-board {
+    min-width: 0 !important;
+    min-height: 200px !important;
+    background: #fff7f7 !important;
+    border-radius: 10px !important;
+    border: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-detail-info {
+    padding: 10px !important;
+    display: block !important;
+    text-align: left !important;
+}
+.cs-result-card .cs-result-detail-board {
+    padding: 12px 10px 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+}
+.cs-result-card .cs-result-detail-board-title {
+    width: 100% !important;
+    align-self: stretch !important;
+    color: #374151 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    margin: 0 !important;
+    padding: 0 0 2px 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-detail-info > .cs-set-bonus-box,
+.cs-result-card .cs-result-detail-info > .cs-stat-legend {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+}
+.cs-result-card .cs-result-detail-info .cs-set-bonus-box > div:first-child,
+.cs-result-card .cs-result-detail-info .cs-stat-legend > div:first-child {
+    display: block !important;
+    color: #374151 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    margin: 0 0 7px 0 !important;
+}
+.cs-result-card .cs-result-detail-info .cs-stat-legend-line {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 1px 0 !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+}
+.cs-result-card .cs-result-detail-grid .solution-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(7, minmax(0, 1fr)) !important;
+    width: 160px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
+    height: 160px !important;
+    min-height: 160px !important;
+    max-height: 160px !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center !important;
+    justify-self: center !important;
+    margin: auto !important;
+    transform: none !important;
+    box-sizing: content-box !important;
+    flex: 0 0 auto !important;
+}
+.cs-result-card .cs-result-detail-grid .solution-cell {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+body.cs-theme-dark .cs-result-card .cs-result-summary-chip,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-button,
+body.cs-theme-dark .cs-result-card .cs-result-detail-info,
+body.cs-theme-dark .cs-result-card .cs-result-detail-board {
+    background: #3a3d42 !important;
+    color: #f3f4f6 !important;
+}
+body.cs-theme-dark .cs-result-card .cs-result-detail-board-title,
+body.cs-theme-dark .cs-result-card .cs-result-detail-info .cs-set-bonus-box > div:first-child,
+body.cs-theme-dark .cs-result-card .cs-result-detail-info .cs-stat-legend > div:first-child {
+    color: #f3f4f6 !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-result-summary-chip,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-button,
+    body.cs-theme-system .cs-result-card .cs-result-detail-info,
+    body.cs-theme-system .cs-result-card .cs-result-detail-board {
+        background: #3a3d42 !important;
+        color: #f3f4f6 !important;
+    }
+    body.cs-theme-system .cs-result-card .cs-result-detail-board-title,
+    body.cs-theme-system .cs-result-card .cs-result-detail-info .cs-set-bonus-box > div:first-child,
+    body.cs-theme-system .cs-result-card .cs-result-detail-info .cs-stat-legend > div:first-child {
+        color: #f3f4f6 !important;
+    }
+}
+
+/* cookie-sim: keep expanded detail text readable in dark mode */
+body.cs-theme-dark .cs-result-card .cs-result-detail-info .cs-set-bonus-box,
+body.cs-theme-dark .cs-result-card .cs-result-detail-info .cs-set-bonus-box div,
+body.cs-theme-dark .cs-result-card .cs-result-detail-info .cs-set-bonus-box span,
+body.cs-theme-dark .cs-result-card .cs-result-detail-info .cs-stat-legend,
+body.cs-theme-dark .cs-result-card .cs-result-detail-info .cs-stat-legend div,
+body.cs-theme-dark .cs-result-card .cs-result-detail-info .cs-stat-legend span {
+    color: #f3f4f6 !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-result-detail-info .cs-set-bonus-box,
+    body.cs-theme-system .cs-result-card .cs-result-detail-info .cs-set-bonus-box div,
+    body.cs-theme-system .cs-result-card .cs-result-detail-info .cs-set-bonus-box span,
+    body.cs-theme-system .cs-result-card .cs-result-detail-info .cs-stat-legend,
+    body.cs-theme-system .cs-result-card .cs-result-detail-info .cs-stat-legend div,
+    body.cs-theme-system .cs-result-card .cs-result-detail-info .cs-stat-legend span {
+        color: #f3f4f6 !important;
+    }
+}
+
+/* cookie-sim: final result layout — board first, details only when chips are clicked */
+.cs-result-card .cs-board-result-wrapper,
+.cs-result-card .cs-board-result-wrapper:hover {
+    transform: none !important;
+    transition: none !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
+.cs-result-card .cs-board-result-wrapper .solution-header {
+    display: none !important;
+}
+.cs-result-card .cs-result-main {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-chip-row {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-control-chip,
+.cs-result-card .cs-result-static-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+    padding: 5px 9px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: #fff7f7 !important;
+    color: #374151 !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-control-chip {
+    cursor: pointer !important;
+}
+.cs-result-card .cs-result-control-chip:hover,
+.cs-result-card .cs-result-control-chip.active {
+    color: #ff4048 !important;
+}
+.cs-result-card .cs-result-control-arrow {
+    font-size: 10px !important;
+    line-height: 1 !important;
+}
+.cs-result-card .cs-result-board-row {
+    position: relative !important;
+    width: 100% !important;
+    min-height: 190px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-board-row .cs-board-panel {
+    width: 100% !important;
+    min-height: 190px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    padding: 10px !important;
+    border-radius: 10px !important;
+    background: #fff7f7 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-board-title {
+    align-self: flex-start !important;
+    margin: 0 0 0 4px !important;
+    color: #374151 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+}
+.cs-result-card .cs-result-board-row .solution-grid,
+.cs-result-card .cs-result-detail-board .solution-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(7, minmax(0, 1fr)) !important;
+    width: 168px !important;
+    min-width: 168px !important;
+    max-width: 168px !important;
+    height: 168px !important;
+    min-height: 168px !important;
+    max-height: 168px !important;
+    aspect-ratio: 1 / 1 !important;
+    align-self: center !important;
+    justify-self: center !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    box-sizing: content-box !important;
+    flex: 0 0 auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+.cs-result-card .cs-result-board-row .solution-cell,
+.cs-result-card .cs-result-detail-board .solution-cell {
+    width: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    font-size: 0.75em !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+}
+.cs-result-card .cs-result-arrow,
+.cs-result-card .cs-result-arrow:hover,
+.cs-result-card .cs-result-arrow:focus,
+.cs-result-card .cs-result-arrow:active {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 24px !important;
+    height: 36px !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #111827 !important;
+    font-size: 22px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    z-index: 10 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+}
+.cs-result-card .cs-result-arrow-prev { left: -10px !important; }
+.cs-result-card .cs-result-arrow-next { right: -10px !important; }
+.cs-result-card .cs-result-detail-area {
+    width: 100% !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-detail-grid {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-detail-grid:not(:has(.cs-result-detail-board)) {
+    grid-template-columns: minmax(0, 1fr) !important;
+}
+.cs-result-card .cs-result-detail-info,
+.cs-result-card .cs-result-detail-board {
+    min-width: 0 !important;
+    background: #fff7f7 !important;
+    border-radius: 10px !important;
+    border: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-detail-info {
+    padding: 10px !important;
+    text-align: left !important;
+}
+.cs-result-card .cs-result-detail-board {
+    padding: 12px 10px 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+}
+.cs-result-card .cs-result-detail-board-title {
+    width: 100% !important;
+    color: #374151 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    margin: 0 !important;
+    padding: 0 0 2px 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-detail-info > .cs-set-bonus-box,
+.cs-result-card .cs-result-detail-info > .cs-stat-legend {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+}
+.cs-result-card .cs-stat-legend-line {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 1px 0 !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+}
+.cs-result-card .cs-stat-legend-chip {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 3px !important;
+    flex: 0 0 12px !important;
+}
+body.cs-theme-dark .cs-result-card .cs-result-control-chip,
+body.cs-theme-dark .cs-result-card .cs-result-static-chip,
+body.cs-theme-dark .cs-result-card .cs-result-board-row .cs-board-panel,
+body.cs-theme-dark .cs-result-card .cs-result-detail-info,
+body.cs-theme-dark .cs-result-card .cs-result-detail-board {
+    background: #3a3d42 !important;
+    color: #f3f4f6 !important;
+}
+body.cs-theme-dark .cs-result-card .cs-board-title,
+body.cs-theme-dark .cs-result-card .cs-result-detail-board-title,
+body.cs-theme-dark .cs-result-card .cs-result-arrow {
+    color: #f3f4f6 !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-result-control-chip,
+    body.cs-theme-system .cs-result-card .cs-result-static-chip,
+    body.cs-theme-system .cs-result-card .cs-result-board-row .cs-board-panel,
+    body.cs-theme-system .cs-result-card .cs-result-detail-info,
+    body.cs-theme-system .cs-result-card .cs-result-detail-board {
+        background: #3a3d42 !important;
+        color: #f3f4f6 !important;
+    }
+    body.cs-theme-system .cs-result-card .cs-board-title,
+    body.cs-theme-system .cs-result-card .cs-result-detail-board-title,
+    body.cs-theme-system .cs-result-card .cs-result-arrow {
+        color: #f3f4f6 !important;
+    }
+}
+@media (max-width: 430px) {
+    .cs-result-card .cs-result-detail-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+    .cs-result-card .cs-result-arrow-prev { left: -8px !important; }
+    .cs-result-card .cs-result-arrow-next { right: -8px !important; }
+}
+
+/* cookie-sim: final compact result layout - one visible board, details in toggles */
+.cs-result-card .cs-result-main {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-board-row {
+    position: relative !important;
+    width: 100% !important;
+    min-height: 206px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-board-row .cs-board-panel {
+    width: 100% !important;
+    min-height: 206px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 10px !important;
+    border-radius: 10px !important;
+    background: #fff7f7 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-board-row .solution-grid {
+    width: 168px !important;
+    min-width: 168px !important;
+    max-width: 168px !important;
+    height: 168px !important;
+    min-height: 168px !important;
+    max-height: 168px !important;
+    margin: 0 auto !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    overflow: hidden !important;
+    transform: none !important;
+    box-sizing: content-box !important;
+    flex: 0 0 auto !important;
+}
+.cs-result-card .cs-result-board-row .solution-cell {
+    width: 24px !important;
+    min-width: 24px !important;
+    max-width: 24px !important;
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    font-size: 0.75em !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+}
+.cs-result-card .cs-result-arrow,
+.cs-result-card .cs-result-arrow:hover,
+.cs-result-card .cs-result-arrow:focus,
+.cs-result-card .cs-result-arrow:active {
+    position: absolute !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 24px !important;
+    height: 40px !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #111827 !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    z-index: 10 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+}
+.cs-result-card .cs-result-arrow-prev { left: -10px !important; }
+.cs-result-card .cs-result-arrow-next { right: -10px !important; }
+.cs-result-card .cs-result-detail-area {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-toggle-wide {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+    border-radius: 10px !important;
+    background: #fff7f7 !important;
+    color: #374151 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    white-space: normal !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-toggle-wide:hover,
+.cs-result-card .cs-result-toggle-wide.active {
+    color: #ff4048 !important;
+}
+.cs-result-card .cs-result-detail-content {
+    width: 100% !important;
+    margin-top: 6px !important;
+    padding: 10px !important;
+    border-radius: 10px !important;
+    background: #fff7f7 !important;
+    color: #374151 !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+}
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box,
+.cs-result-card .cs-result-detail-content > .cs-stat-legend {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+}
+.cs-result-card .cs-result-detail-content .cs-stat-legend-line {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 1px 0 !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+}
+.cs-result-card .cs-result-detail-content .cs-stat-legend-chip {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 3px !important;
+    flex: 0 0 12px !important;
+}
+body.cs-theme-dark .cs-result-card .cs-result-board-row .cs-board-panel,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide,
+body.cs-theme-dark .cs-result-card .cs-result-detail-content {
+    background: #3a3d42 !important;
+    color: #f3f4f6 !important;
+}
+body.cs-theme-dark .cs-result-card .cs-result-arrow,
+body.cs-theme-dark .cs-result-card .cs-result-detail-content,
+body.cs-theme-dark .cs-result-card .cs-result-detail-content * {
+    color: #f3f4f6 !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-result-board-row .cs-board-panel,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide,
+    body.cs-theme-system .cs-result-card .cs-result-detail-content {
+        background: #3a3d42 !important;
+        color: #f3f4f6 !important;
+    }
+    body.cs-theme-system .cs-result-card .cs-result-arrow,
+    body.cs-theme-system .cs-result-card .cs-result-detail-content,
+    body.cs-theme-system .cs-result-card .cs-result-detail-content * {
+        color: #f3f4f6 !important;
+    }
+}
+
+
+/* cookie-sim: result board view switcher fix */
+.cs-result-card .cs-result-board-row .cs-board-panel {
+    position: relative !important;
+    overflow: visible !important;
+}
+.cs-result-card .cs-result-visible-board {
+    display: grid !important;
+}
+.cs-result-card .cs-result-visible-board[style*="display: none"] {
+    display: none !important;
+}
+.cs-result-card .cs-result-arrow,
+.cs-result-card .cs-result-arrow:hover,
+.cs-result-card .cs-result-arrow:focus,
+.cs-result-card .cs-result-arrow:active {
+    pointer-events: auto !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    touch-action: manipulation !important;
+}
+.cs-result-card .cs-current-detail-mount {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+
+/* cookie-sim: requested result detail centering + dropdown-style chevrons */
+.cs-result-card .cs-result-detail-content {
+    text-align: center !important;
+}
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box,
+.cs-result-card .cs-result-detail-content > .cs-stat-legend {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box > div,
+.cs-result-card .cs-result-detail-content > .cs-stat-legend > div {
+    text-align: center !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+.cs-result-card .cs-result-detail-content .cs-stat-legend-line {
+    width: 100% !important;
+    justify-content: center !important;
+}
+.cs-result-card .cs-result-detail-content [data-cs-resistance="1"] {
+    width: 100% !important;
+    text-align: center !important;
+}
+.cs-result-card .cs-result-toggle-wide,
+.cs-result-card .cs-result-toggle-wide:hover,
+.cs-result-card .cs-result-toggle-wide.active,
+.cs-result-card .cs-result-control-chip:hover,
+.cs-result-card .cs-result-control-chip.active {
+    color: #374151 !important;
+}
+.cs-result-card .cs-result-control-arrow {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 14px !important;
+    height: 14px !important;
+    flex: 0 0 14px !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    color: transparent !important;
+}
+.cs-result-card .cs-result-control-arrow::before {
+    content: '' !important;
+    width: 6px !important;
+    height: 6px !important;
+    border-right: 2px solid #6b7280 !important;
+    border-bottom: 2px solid #6b7280 !important;
+    transform: rotate(45deg) !important;
+    margin-top: -3px !important;
+    transition: transform 0.12s ease, margin 0.12s ease !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-control-arrow.open::before,
+.cs-result-card .cs-result-toggle-wide.active .cs-result-control-arrow::before {
+    transform: rotate(225deg) !important;
+    margin-top: 3px !important;
+}
+.cs-result-card .cs-result-arrow-prev { left: 12px !important; }
+.cs-result-card .cs-result-arrow-next { right: 12px !important; }
+@media (max-width: 430px) {
+    .cs-result-card .cs-result-arrow-prev { left: 10px !important; }
+    .cs-result-card .cs-result-arrow-next { right: 10px !important; }
+}
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide:hover,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide.active {
+    color: #f3f4f6 !important;
+}
+body.cs-theme-dark .cs-result-card .cs-result-control-arrow::before {
+    border-color: #aeb4bd !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide:hover,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide.active {
+        color: #f3f4f6 !important;
+    }
+    body.cs-theme-system .cs-result-card .cs-result-control-arrow::before {
+        border-color: #aeb4bd !important;
+    }
+}
+
+/* cookie-sim: requested final result layout refinements */
+.cs-top-grid {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr) !important;
+}
+
+.cs-result-card .cs-result-detail-content,
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box,
+.cs-result-card .cs-result-detail-content > .cs-stat-legend,
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box > div,
+.cs-result-card .cs-result-detail-content > .cs-stat-legend > div,
+.cs-result-card .cs-result-detail-content [data-cs-resistance="1"] {
+    text-align: left !important;
+}
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box,
+.cs-result-card .cs-result-detail-content > .cs-stat-legend {
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+}
+.cs-result-card .cs-result-detail-content .cs-stat-legend-line {
+    justify-content: flex-start !important;
+    width: 100% !important;
+}
+
+.cs-result-card .cs-result-arrow,
+.cs-result-card .cs-result-arrow:hover,
+.cs-result-card .cs-result-arrow:focus,
+.cs-result-card .cs-result-arrow:active {
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.cs-result-card .cs-result-arrow::before {
+    content: '' !important;
+    display: block !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-right: 2.5px solid #6b7280 !important;
+    border-bottom: 2.5px solid #6b7280 !important;
+    box-sizing: border-box !important;
+}
+.cs-result-card .cs-result-arrow-prev::before {
+    transform: rotate(135deg) !important;
+}
+.cs-result-card .cs-result-arrow-next::before {
+    transform: rotate(-45deg) !important;
+}
+.cs-result-card .cs-result-arrow-prev { left: 14px !important; }
+.cs-result-card .cs-result-arrow-next { right: 14px !important; }
+
+body.cs-theme-dark .cs-result-card .cs-result-arrow::before {
+    border-color: #aeb4bd !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-result-arrow::before {
+        border-color: #aeb4bd !important;
+    }
+}
+
+/* When the top layout collapses but there is still width, put detail left and board right. */
+@media (max-width: 780px) and (min-width: 521px) {
+    .cs-top-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .cs-result-card .cs-result-main.cs-detail-open {
+        display: grid !important;
+        grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr) !important;
+        grid-template-areas: 'detail board' !important;
+        column-gap: 8px !important;
+        row-gap: 0 !important;
+        align-items: stretch !important;
+    }
+    .cs-result-card .cs-result-main.cs-detail-open .cs-result-board-row {
+        grid-area: board !important;
+        min-height: 206px !important;
+        height: 100% !important;
+    }
+    .cs-result-card .cs-result-main.cs-detail-open .cs-current-detail-mount {
+        grid-area: detail !important;
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .cs-result-card .cs-result-main.cs-detail-open .cs-result-detail-area {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .cs-result-card .cs-result-main.cs-detail-open .cs-result-toggle-wide {
+        flex: 0 0 auto !important;
+    }
+    .cs-result-card .cs-result-main.cs-detail-open .cs-result-detail-content {
+        flex: 1 1 auto !important;
+        margin-top: 6px !important;
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+    }
+    .cs-result-card .cs-result-main.cs-detail-open .cs-result-detail-content > .cs-set-bonus-box,
+    .cs-result-card .cs-result-main.cs-detail-open .cs-result-detail-content > .cs-stat-legend {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 520px) {
+    .cs-top-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .cs-result-card .cs-result-main.cs-detail-open {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .cs-result-card .cs-result-arrow-prev { left: 10px !important; }
+    .cs-result-card .cs-result-arrow-next { right: 10px !important; }
+}
+
+/* cookie-sim: requested 6:4 layout + neutral toggle text + smaller result arrows */
+.cs-top-grid {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr) !important;
+}
+.cs-result-card .cs-result-toggle-wide,
+.cs-result-card .cs-result-toggle-wide:hover,
+.cs-result-card .cs-result-toggle-wide:focus,
+.cs-result-card .cs-result-toggle-wide:active,
+.cs-result-card .cs-result-toggle-wide.active,
+.cs-result-card .cs-result-toggle-wide.active:hover,
+.cs-result-card .cs-result-toggle-wide span,
+.cs-result-card .cs-result-toggle-wide.active span,
+.cs-result-card .cs-result-control-chip:hover,
+.cs-result-card .cs-result-control-chip.active {
+    color: #111827 !important;
+}
+.cs-result-card .cs-result-arrow,
+.cs-result-card .cs-result-arrow:hover,
+.cs-result-card .cs-result-arrow:focus,
+.cs-result-card .cs-result-arrow:active {
+    width: 20px !important;
+    height: 32px !important;
+}
+.cs-result-card .cs-result-arrow::before {
+    width: 6px !important;
+    height: 6px !important;
+    border-right-width: 2px !important;
+    border-bottom-width: 2px !important;
+}
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide:hover,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide:focus,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide:active,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide.active,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide span,
+body.cs-theme-dark .cs-result-card .cs-result-toggle-wide.active span,
+body.cs-theme-dark .cs-result-card .cs-result-control-chip:hover,
+body.cs-theme-dark .cs-result-card .cs-result-control-chip.active {
+    color: #f3f4f6 !important;
+}
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide:hover,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide:focus,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide:active,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide.active,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide span,
+    body.cs-theme-system .cs-result-card .cs-result-toggle-wide.active span,
+    body.cs-theme-system .cs-result-card .cs-result-control-chip:hover,
+    body.cs-theme-system .cs-result-card .cs-result-control-chip.active {
+        color: #f3f4f6 !important;
+    }
+}
+
+
+/* cookie-sim: layout balance fix - keep top cards visually aligned */
+.cs-top-grid {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr) !important;
+    align-items: stretch !important;
+}
+.cs-top-grid > .cs-card,
+.cs-top-grid > .cs-result-card {
+    min-width: 0 !important;
+    height: 100% !important;
+}
+.cs-result-card {
+    display: flex !important;
+    flex-direction: column !important;
+}
+.cs-result-card .solutions-container {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+}
+.cs-result-card .cs-empty-result {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-height: 232px !important;
+    height: 100% !important;
+}
+@media (max-width: 780px) {
+    .cs-top-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .cs-result-card .cs-empty-result {
+        min-height: 210px !important;
+    }
+}
+
+
+/* cookie-sim: gray width alignment fix */
+.cs-top-grid {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr) !important;
+}
+.cs-action-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+}
+.cs-upload-row {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 4fr) !important;
+}
+.cs-result-card .solutions-container {
+    padding: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+.cs-result-card .cs-empty-result {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+}
+@media (max-width: 780px) {
+    .cs-top-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+
+/* cookie-sim: right edge alignment + scrollbar gap fix */
+.cs-shard-wrap {
+    width: 100% !important;
+    max-width: none !important;
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-section-pill,
+.cs-top-grid,
+.pieces-section.cs-card {
+    width: 100% !important;
+    max-width: none !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+}
+.cs-top-grid > .cs-card,
+.cs-top-grid > .cs-result-card {
+    max-width: none !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.cs-result-card .cs-stat-legend-line,
+.cs-result-card .cs-result-detail-content .cs-stat-legend-line,
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box > div:not(:first-child):not([style*="height: 1px"]),
+.cs-result-card .cs-result-detail-content > .cs-stat-legend > div:not(:first-child),
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box span,
+.cs-result-card .cs-result-detail-content > .cs-stat-legend span {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+}
+
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box > div,
+.cs-result-card .cs-result-detail-content > .cs-stat-legend > div {
+    margin-top: 1px !important;
+    margin-bottom: 1px !important;
+}
+.cs-result-card .cs-result-detail-content > .cs-set-bonus-box > div[style*="height: 1px"] {
+    margin-top: 6px !important;
+    margin-bottom: 4px !important;
+}
+
+/* cookie-sim: dark mode modal/stat editor and recognized cards border cleanup */
+body.cs-theme-dark .pieces-section .piece-item,
+body.cs-theme-dark #piece-palette .piece-item,
+body.cs-theme-dark #recognized-pieces-section .piece-item,
+body.cs-theme-dark .cs-picker-card {
+    border: 0 !important;
+    border-color: transparent !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark .cs-modal-select-menu,
+body.cs-theme-dark .cs-modal-select-dropdown,
+body.cs-theme-dark .cs-modal-select-button {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark .cs-modal-select-menu *,
+body.cs-theme-dark .cs-modal-select-button {
+    color: #f3f4f6 !important;
+}
+
+
+/* cookie-sim: dark mode recognized card border + stat editor dropdown box cleanup */
+body.cs-theme-dark #recognized-pieces-section div[style*="132px"][style*="border"],
+body.cs-theme-dark #piece-palette div[style*="132px"][style*="border"],
+body.cs-theme-dark #recognized-pieces-section div[style*="214px"][style*="border"],
+body.cs-theme-dark #piece-palette div[style*="214px"][style*="border"],
+body.cs-theme-dark #recognized-pieces-section div[style*="156px"][style*="border"],
+body.cs-theme-dark #piece-palette div[style*="156px"][style*="border"],
+body.cs-theme-dark .cs-picker-card {
+    border: 0 !important;
+    border-color: transparent !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark div[style*="max-height: 190px"][style*="overflow-y: auto"] {
+    background: transparent !important;
+    border: 0 !important;
+    border-color: transparent !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark div[style*="max-height: 190px"][style*="overflow-y: auto"] button {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark div[style*="max-height: 190px"][style*="overflow-y: auto"] button:hover {
+    background: #3a3d42 !important;
+}
+
+
+/* cookie-sim: dark-mode dropdowns match the stat editor two-tone design */
+body.cs-theme-dark .cs-modal-select-dropdown {
+    background: transparent !important;
+}
+body.cs-theme-dark .cs-modal-select-button {
+    background: #3a3d42 !important;
+    color: #f3f4f6 !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark .cs-modal-select-menu,
+body.cs-theme-dark .cs-stat-edit-menu {
+    background: #303236 !important;
+    color: #f3f4f6 !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark .cs-modal-select-menu .cs-modal-select-item,
+body.cs-theme-dark .cs-stat-edit-menu .cs-modal-select-item,
+body.cs-theme-dark .cs-stat-edit-menu > button {
+    background: #303236 !important;
+    color: #f3f4f6 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark .cs-modal-select-menu .cs-modal-select-item.active,
+body.cs-theme-dark .cs-stat-edit-menu .cs-modal-select-item.active {
+    background: #303236 !important;
+    color: #ffffff !important;
+}
+body.cs-theme-dark .cs-modal-select-menu .cs-modal-select-item:hover,
+body.cs-theme-dark .cs-modal-select-menu .cs-modal-select-item:focus,
+body.cs-theme-dark .cs-stat-edit-menu .cs-modal-select-item:hover,
+body.cs-theme-dark .cs-stat-edit-menu .cs-modal-select-item:focus,
+body.cs-theme-dark .cs-stat-edit-menu > button:hover,
+body.cs-theme-dark .cs-stat-edit-menu > button:focus {
+    background: #303236 !important;
+    color: #ff4048 !important;
+}
+
+
+.cs-stat-edit-menu {
+    scrollbar-width: thin;
+    scrollbar-color: #8f96a3 transparent;
+}
+.cs-stat-edit-menu::-webkit-scrollbar {
+    width: 8px;
+}
+.cs-stat-edit-menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+.cs-stat-edit-menu::-webkit-scrollbar-thumb {
+    background: #8f96a3;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+body.cs-theme-dark .cs-stat-edit-menu::-webkit-scrollbar-thumb {
+    background: #8f96a3;
+}
+body.cs-theme-dark .cs-stat-edit-menu::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+
+/* cookie-sim: result toggle spacing */
+.cs-result-card .cs-result-toggle-wide {
+    margin-top: 8px !important;
+}
+.cs-result-card .cs-result-board-row {
+    margin-bottom: 0 !important;
+}
+
+
+/* cookie-sim: dark mode special dropdowns (recognized filter + image set selector)
+   Use the same closed/opened background (#3a3d42) and restore the soft shadow. */
+body.cs-theme-dark #recognized-piece-filter-wrap .cs-modal-select-button,
+body.cs-theme-dark .cs-image-set-select-wrap .cs-modal-select-button {
+    background: #3a3d42 !important;
+    color: #f3f4f6 !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark #recognized-piece-filter-wrap .cs-modal-select-button::after,
+body.cs-theme-dark .cs-image-set-select-wrap .cs-modal-select-button::after {
+    border-right-color: #cbd5e1 !important;
+    border-bottom-color: #cbd5e1 !important;
+}
+body.cs-theme-dark #recognized-piece-filter-wrap .cs-modal-select-menu,
+body.cs-theme-dark .cs-image-set-select-wrap .cs-modal-select-menu {
+    background: #3a3d42 !important;
+    color: #f3f4f6 !important;
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark #recognized-piece-filter-wrap .cs-modal-select-dropdown.open .cs-modal-select-menu,
+body.cs-theme-dark .cs-image-set-select-wrap .cs-modal-select-dropdown.open .cs-modal-select-menu {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+}
+body.cs-theme-dark #recognized-piece-filter-wrap .cs-modal-select-menu .cs-modal-select-item,
+body.cs-theme-dark .cs-image-set-select-wrap .cs-modal-select-menu .cs-modal-select-item {
+    background: #3a3d42 !important;
+    color: #f3f4f6 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+body.cs-theme-dark #recognized-piece-filter-wrap .cs-modal-select-menu .cs-modal-select-item.active,
+body.cs-theme-dark .cs-image-set-select-wrap .cs-modal-select-menu .cs-modal-select-item.active {
+    background: #3a3d42 !important;
+    color: #ffffff !important;
+}
+body.cs-theme-dark #recognized-piece-filter-wrap .cs-modal-select-menu .cs-modal-select-item:hover,
+body.cs-theme-dark #recognized-piece-filter-wrap .cs-modal-select-menu .cs-modal-select-item:focus,
+body.cs-theme-dark .cs-image-set-select-wrap .cs-modal-select-menu .cs-modal-select-item:hover,
+body.cs-theme-dark .cs-image-set-select-wrap .cs-modal-select-menu .cs-modal-select-item:focus {
+    background: #3a3d42 !important;
+    color: #ff4048 !important;
+}
+
+
+/* cookie-sim: make main dark-mode scrollbars slimmer to match the dropdown scrollbar */
+body.cs-theme-dark {
+    scrollbar-width: thin;
+    scrollbar-color: #8f96a3 transparent;
+}
+body.cs-theme-dark::-webkit-scrollbar,
+body.cs-theme-dark *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+body.cs-theme-dark::-webkit-scrollbar-track,
+body.cs-theme-dark *::-webkit-scrollbar-track,
+body.cs-theme-dark::-webkit-scrollbar-corner,
+body.cs-theme-dark *::-webkit-scrollbar-corner {
+    background: transparent;
+}
+body.cs-theme-dark::-webkit-scrollbar-thumb,
+body.cs-theme-dark *::-webkit-scrollbar-thumb {
+    background: #8f96a3;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+body.cs-theme-dark::-webkit-scrollbar-thumb:hover,
+body.cs-theme-dark *::-webkit-scrollbar-thumb:hover {
+    background: #b6bcc6;
+}
+
+
+/* Final universal thin scrollbar override (light/dark/system) */
+html,
+body,
+body * {
+    scrollbar-width: thin !important;
+    scrollbar-color: #9ca3af transparent !important;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+body *::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+}
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+body *::-webkit-scrollbar-track,
+html::-webkit-scrollbar-corner,
+body::-webkit-scrollbar-corner,
+body *::-webkit-scrollbar-corner {
+    background: transparent !important;
+}
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+body *::-webkit-scrollbar-thumb {
+    background: #9ca3af !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+}
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+body *::-webkit-scrollbar-thumb:hover {
+    background: #b6bcc6 !important;
+}
+
+
+/* cookie-sim: final theme-specific scrollbar thumb colors */
+/* Light: sampled from the requested reference image (#999ca4). */
+html:not(#cs-scroll-color-a):not(#cs-scroll-color-b),
+body:not(#cs-scroll-color-a):not(#cs-scroll-color-b),
+body *:not(#cs-scroll-color-a):not(#cs-scroll-color-b) {
+    scrollbar-color: #999ca4 transparent !important;
+}
+html:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb,
+body:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb,
+body *:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb,
+html:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb:hover,
+body:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb:hover,
+body *:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb:hover {
+    background: #999ca4 !important;
+}
+
+/* Explicit dark theme: sampled from the requested dark reference image (#9ca3af). */
+body.cs-theme-dark:not(#cs-scroll-color-a):not(#cs-scroll-color-b),
+body.cs-theme-dark:not(#cs-scroll-color-a):not(#cs-scroll-color-b) *:not(#cs-scroll-color-c):not(#cs-scroll-color-d) {
+    scrollbar-color: #9ca3af transparent !important;
+}
+body.cs-theme-dark:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb,
+body.cs-theme-dark:not(#cs-scroll-color-a):not(#cs-scroll-color-b) *:not(#cs-scroll-color-c):not(#cs-scroll-color-d)::-webkit-scrollbar-thumb,
+body.cs-theme-dark:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb:hover,
+body.cs-theme-dark:not(#cs-scroll-color-a):not(#cs-scroll-color-b) *:not(#cs-scroll-color-c):not(#cs-scroll-color-d)::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af !important;
+}
+
+/* System theme while the device is dark. */
+@media (prefers-color-scheme: dark) {
+    body.cs-theme-system:not(#cs-scroll-color-a):not(#cs-scroll-color-b),
+    body.cs-theme-system:not(#cs-scroll-color-a):not(#cs-scroll-color-b) *:not(#cs-scroll-color-c):not(#cs-scroll-color-d) {
+        scrollbar-color: #9ca3af transparent !important;
+    }
+    body.cs-theme-system:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb,
+    body.cs-theme-system:not(#cs-scroll-color-a):not(#cs-scroll-color-b) *:not(#cs-scroll-color-c):not(#cs-scroll-color-d)::-webkit-scrollbar-thumb,
+    body.cs-theme-system:not(#cs-scroll-color-a):not(#cs-scroll-color-b)::-webkit-scrollbar-thumb:hover,
+    body.cs-theme-system:not(#cs-scroll-color-a):not(#cs-scroll-color-b) *:not(#cs-scroll-color-c):not(#cs-scroll-color-d)::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af !important;
+    }
+}

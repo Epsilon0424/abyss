@@ -5073,9 +5073,9 @@ function findPieceNameByShape(extractedShape) {
             empty.style.padding = '14px 10px';
             empty.style.borderRadius = '10px';
             empty.style.background = CS_DARK_UI ? '#303236' : '#f3f4f6';
-            empty.style.color = CS_DARK_UI ? '#d1d5db' : '#6b7280';
-            empty.style.fontWeight = '600';
-            empty.style.fontSize = '13px';
+            empty.style.color = 'var(--cs-muted, #9ca3af)';
+            empty.style.fontWeight = '400';
+            empty.style.fontSize = '12px';
             empty.style.lineHeight = '1.4';
             empty.style.textAlign = 'center';
             palette.appendChild(empty);

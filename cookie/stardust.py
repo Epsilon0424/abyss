@@ -88,7 +88,12 @@ def stardust_allowed_artifacts() -> List[str]:
 
 
 def stardust_allowed_seaz() -> List[str]:
-    return [name for name in SEAZNITES.keys() if str(name).startswith("페퍼루비:")]
+    return [
+        name
+        for name in SEAZNITES.keys()
+        if str(name).startswith("페퍼루비:")
+        and "믿음직한 브리더" not in str(name)
+    ]
 
 
 @lru_cache(maxsize=None)

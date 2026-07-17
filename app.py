@@ -190,16 +190,12 @@ def _restore_selection_widgets_for_language_toggle() -> None:
 
 def _icon_for_party_unique(unique_name: str, party_cookie_name: str) -> str | None:
     """유니크 설탕유리조각 드롭다운 좌측 아이콘.
-    - 칠리맛 쿠키의 기억 : 유형/ALL.png
+    - 공용 유니크 : 유형/ALL.png
     - 데미지 딜러 유니크 3종 : 유형/데미지 딜러.png
-    - 스트라이커 유니크 : 유형/스트라이커.png
-    - 서포터 유니크 : 유형/서포터.png
+    - 스트라이커 유니크 2종 : 유형/스트라이커.png
+    - 서포터 유니크 3종 : 유형/서포터.png
     """
     unique_name = str(unique_name).strip()
-
-    # 칠리는 공용 유니크라 ALL 아이콘 사용
-    if unique_name == "칠리맛 쿠키의 기억":
-        return _icon_for_role("ALL")
 
     meta = getattr(sim, "UNIQUE_SHARDS", {}).get(unique_name, {}) or {}
     roles = [str(x).lower() for x in meta.get("allowed_roles", [])]
@@ -229,71 +225,73 @@ def _party_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     # 메인 딜러 유니크는 쿠키 파일의 allowed_uniques()에서 1개로 고정
     # 파티 쿠키 유니크는 세부 설정에서 직접 선택 가능하게 유지
     support_options = [
-        "체리맛 쿠키의 기억",
-        "크러쉬드페퍼맛 쿠키의 기억",
-        "불야성의 밤의 기억",
+        "로드 나이트메어의 기억",
+        "멜랑크림 쿠키의 순수한 기억",
+        "달빛술사 쿠키의 기억",
     ]
     striker_options = [
-        "마라맛 쿠키의 기억",
-        "룽샤맛 쿠키의 기억",
+        "밀키웨이맛 쿠키의 기억",
+        "꿈열차에 실린 기억",
     ]
 
     if cookie_name == "이슬맛 쿠키":
-        return support_options, "체리맛 쿠키의 기억"
+        return support_options, "멜랑크림 쿠키의 순수한 기억"
 
     if cookie_name == "달빛술사 쿠키":
-        return support_options, "불야성의 밤의 기억"
+        return support_options, "달빛술사 쿠키의 기억"
 
     if cookie_name in ("샬롯맛 쿠키", "네온데니쉬맛 쿠키"):
-        return support_options, "크러쉬드페퍼맛 쿠키의 기억"
+        return support_options, "멜랑크림 쿠키의 순수한 기억"
 
-    if cookie_name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "체리콜라맛 쿠키"):
-        return striker_options, "룽샤맛 쿠키의 기억"
+    if cookie_name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키"):
+        return striker_options, "꿈열차에 실린 기억"
 
     return [], ""
 
 def _main_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     """메인 쿠키 유니크 설탕유리조각 후보 / 기본값."""
     # 메인 쿠키는 역할 기준으로 유니크 후보 표시
-    # - 딜러: 딜러 유니크 3종 + 공용 칠리
-    # - 스트라이커: 스트라이커 유니크 2종 + 공용 칠리
-    # - 서포터: 서포터 유니크 3종 + 공용 칠리
+    # - 딜러: 딜러 유니크 3종 + 공용 유니크
+    # - 스트라이커: 스트라이커 유니크 2종 + 공용 유니크
+    # - 서포터: 서포터 유니크 3종 + 공용 유니크
     dps_options = [
-        "피닉스페퍼 쿠키의 기억",
-        "폭주한 룽샤맛 쿠키의 기억",
-        "꺼지지 않는 봉화의 기억",
-        "칠리맛 쿠키의 기억",
+        "로드 나이트메어의 뒤틀린 기억",
+        "스타더스트 쿠키의 기억",
+        "꿈세계의 기억",
+        "새벽을 여는 달빛술사 쿠키의 기억",
     ]
     striker_options = [
-        "마라맛 쿠키의 기억",
-        "룽샤맛 쿠키의 기억",
-        "칠리맛 쿠키의 기억",
+        "밀키웨이맛 쿠키의 기억",
+        "꿈열차에 실린 기억",
+        "새벽을 여는 달빛술사 쿠키의 기억",
     ]
     support_options = [
-        "체리맛 쿠키의 기억",
-        "크러쉬드페퍼맛 쿠키의 기억",
-        "불야성의 밤의 기억",
-        "칠리맛 쿠키의 기억",
+        "로드 나이트메어의 기억",
+        "멜랑크림 쿠키의 순수한 기억",
+        "달빛술사 쿠키의 기억",
+        "새벽을 여는 달빛술사 쿠키의 기억",
     ]
 
     dps_preferred = {
-        "멜랑크림 쿠키": "폭주한 룽샤맛 쿠키의 기억",
-        "흑보리맛 쿠키": "피닉스페퍼 쿠키의 기억",
-        "샤이닝베리맛 쿠키": "폭주한 룽샤맛 쿠키의 기억",
-        "피닉스페퍼 쿠키": "피닉스페퍼 쿠키의 기억",
-        "블루멜로우맛 쿠키": "피닉스페퍼 쿠키의 기억",
+        "멜랑크림 쿠키": "스타더스트 쿠키의 기억",
+        "흑보리맛 쿠키": "로드 나이트메어의 뒤틀린 기억",
+        "샤이닝베리맛 쿠키": "스타더스트 쿠키의 기억",
+        "피닉스페퍼 쿠키": "로드 나이트메어의 뒤틀린 기억",
+        "블루멜로우맛 쿠키": "로드 나이트메어의 뒤틀린 기억",
+        "스타더스트 쿠키": "로드 나이트메어의 뒤틀린 기억",
     }
     striker_preferred = {
-        "윈드파라거스 쿠키": "룽샤맛 쿠키의 기억",
-        "룽샤맛 쿠키": "룽샤맛 쿠키의 기억",
-        "마블베리맛 쿠키": "룽샤맛 쿠키의 기억",
-        "체리콜라맛 쿠키": "룽샤맛 쿠키의 기억",
+        "윈드파라거스 쿠키": "꿈열차에 실린 기억",
+        "룽샤맛 쿠키": "꿈열차에 실린 기억",
+        "마블베리맛 쿠키": "꿈열차에 실린 기억",
+        "밀키웨이맛 쿠키": "꿈열차에 실린 기억",
+        "체리콜라맛 쿠키": "꿈열차에 실린 기억",
     }
     support_preferred = {
-        "이슬맛 쿠키": "체리맛 쿠키의 기억",
-        "샬롯맛 쿠키": "크러쉬드페퍼맛 쿠키의 기억",
-        "네온데니쉬맛 쿠키": "크러쉬드페퍼맛 쿠키의 기억",
-        "달빛술사 쿠키": "불야성의 밤의 기억",
+        "이슬맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
+        "샬롯맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
+        "네온데니쉬맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
+        "달빛술사 쿠키": "달빛술사 쿠키의 기억",
     }
 
     role = getattr(sim, "COOKIE_ROLE", {}).get(cookie_name, "")
@@ -371,7 +369,7 @@ def _party_equip_options_for_cookie(
         return name in ("이슬맛 쿠키", "샬롯맛 쿠키", "네온데니쉬맛 쿠키", "달빛술사 쿠키")
 
     def _is_striker_cookie(name: str) -> bool:
-        return name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "체리콜라맛 쿠키")
+        return name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키")
 
     if cookie_name == "이슬맛 쿠키":
         opts = keep(["전설의 유령해적", "영원의 대마술사"])
@@ -395,7 +393,7 @@ def _party_equip_options_for_cookie(
         # 단, 최적화의 잠재/일반 설탕유리조각 후보는 딜러형으로 계산한다.
         opts = keep(["황금 예복", "유성우의 향연"])
         preferred = "황금 예복"
-    elif cookie_name in ("룽샤맛 쿠키", "마블베리맛 쿠키", "윈드파라거스 쿠키"):
+    elif cookie_name in ("룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "윈드파라거스 쿠키"):
         opts = keep(["황금 예복", "유성우의 향연"])
         preferred = "황금 예복"
     else:
@@ -436,6 +434,9 @@ def _party_seaz_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     elif cookie_name == "마블베리맛 쿠키":
         opts = (getattr(sim, "marble_berry_allowed_seaz", lambda: [])() or ["리치코랄:빛나는 은하수"])
         preferred = getattr(sim, "MARBLE_BERRY_FIXED_SEAZ", "리치코랄:빛나는 은하수")
+    elif cookie_name == "밀키웨이맛 쿠키":
+        opts = (getattr(sim, "milky_way_allowed_seaz", lambda: [])() or ["리치코랄:빛나는 은하수"])
+        preferred = getattr(sim, "MILKY_WAY_FIXED_SEAZ", "리치코랄:빛나는 은하수")
     elif cookie_name == "체리콜라맛 쿠키":
         opts = (getattr(sim, "cherry_cola_allowed_seaz", lambda: [])() or ["리치코랄:빛나는 은하수"])
         preferred = getattr(sim, "CHERRY_COLA_FIXED_SEAZ", "리치코랄:빛나는 은하수")
@@ -686,6 +687,10 @@ with st.container(key="outer_shell", border=False):
                         equip_options = (getattr(sim, "lungsha_allowed_equips", lambda: [""])() or [""])
                     elif cookie == "마블베리맛 쿠키":
                         equip_options = (getattr(sim, "marble_berry_allowed_equips", lambda: [""])() or [""])
+                    elif cookie == "밀키웨이맛 쿠키":
+                        equip_options = (getattr(sim, "milky_way_allowed_equips", lambda: [""])() or [""])
+                    elif cookie == "스타더스트 쿠키":
+                        equip_options = (getattr(sim, "stardust_allowed_equips", lambda: [""])() or [""])
                     elif cookie == "체리콜라맛 쿠키":
                         equip_options = (getattr(sim, "cherry_cola_allowed_equips", lambda: [""])() or [""])
                     elif cookie == "블루멜로우맛 쿠키":
@@ -730,7 +735,7 @@ with st.container(key="outer_shell", border=False):
                     # 파티: 서폿 1명만 (이슬/샬롯)
                     render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
                     support_opts = SUPPORT_COOKIE_OPTIONS
-                    init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["wind"])
+                    init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND.get(k, DEFAULT_PARTY_SLOT1_BY_KIND["wind"]))
                     if st.session_state.get(p1k, support_opts[0]) not in support_opts:
                         st.session_state[p1k] = support_opts[0]
                     sup = selectbox_with_left_icon(
@@ -741,19 +746,25 @@ with st.container(key="outer_shell", border=False):
                     )
                     st.session_state.party = [sup]
 
-                elif cookie in ("룽샤맛 쿠키", "마블베리맛 쿠키"):
+                elif cookie in ("룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키"):
                     if cookie == "룽샤맛 쿠키":
                         seaz_options = (
                             getattr(sim, "lungsha_allowed_seaz", lambda: [getattr(sim, "LUNGSHA_FIXED_SEAZ", "리치코랄:빛나는 은하수")])()
                             or [getattr(sim, "LUNGSHA_FIXED_SEAZ", "리치코랄:빛나는 은하수")]
                         )
                         fixed_seaz = getattr(sim, "LUNGSHA_FIXED_SEAZ", "리치코랄:빛나는 은하수")
-                    else:
+                    elif cookie == "마블베리맛 쿠키":
                         seaz_options = (
                             getattr(sim, "marble_berry_allowed_seaz", lambda: [getattr(sim, "MARBLE_BERRY_FIXED_SEAZ", "리치코랄:빛나는 은하수")])()
                             or [getattr(sim, "MARBLE_BERRY_FIXED_SEAZ", "리치코랄:빛나는 은하수")]
                         )
                         fixed_seaz = getattr(sim, "MARBLE_BERRY_FIXED_SEAZ", "리치코랄:빛나는 은하수")
+                    else:
+                        seaz_options = (
+                            getattr(sim, "milky_way_allowed_seaz", lambda: [getattr(sim, "MILKY_WAY_FIXED_SEAZ", "리치코랄:빛나는 은하수")])()
+                            or [getattr(sim, "MILKY_WAY_FIXED_SEAZ", "리치코랄:빛나는 은하수")]
+                        )
+                        fixed_seaz = getattr(sim, "MILKY_WAY_FIXED_SEAZ", "리치코랄:빛나는 은하수")
 
                     seaz_options = [str(x) for x in seaz_options if str(x).strip()] or [fixed_seaz]
                     st.session_state[sk] = fixed_seaz if fixed_seaz in seaz_options else seaz_options[0]
@@ -829,12 +840,21 @@ with st.container(key="outer_shell", border=False):
 
                         st.session_state.party = [sup, strike]
 
-                elif cookie == "흑보리맛 쿠키":
-                    seaz_options = (
-                        getattr(sim, "black_barley_allowed_seaz", lambda: None)()
-                        or [x for x in getattr(sim, "SEAZNITES", {}).keys() if str(x).startswith("페퍼루비:")]
-                    )
-                    seaz_options = hide_breeder_when_not_wind(cookie, seaz_options) or [""]
+                elif cookie in ("흑보리맛 쿠키", "스타더스트 쿠키"):
+                    if cookie == "스타더스트 쿠키":
+                        seaz_options = (
+                            getattr(sim, "stardust_allowed_seaz", lambda: None)()
+                            or [x for x in getattr(sim, "SEAZNITES", {}).keys() if str(x).startswith("페퍼루비:")]
+                        )
+                    else:
+                        seaz_options = (
+                            getattr(sim, "black_barley_allowed_seaz", lambda: None)()
+                            or [x for x in getattr(sim, "SEAZNITES", {}).keys() if str(x).startswith("페퍼루비:")]
+                        )
+                    if cookie != "스타더스트 쿠키":
+                        seaz_options = hide_breeder_when_not_wind(cookie, seaz_options) or [""]
+                    else:
+                        seaz_options = seaz_options or [""]
 
                     PREFERRED_SEAZ = "페퍼루비:영예로운 기사도"
                     cur = st.session_state.get(sk, "")
@@ -854,7 +874,7 @@ with st.container(key="outer_shell", border=False):
                         render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
 
                         support_opts = SUPPORT_COOKIE_OPTIONS
-                        init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["bb"])
+                        init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND.get(k, DEFAULT_PARTY_SLOT1_BY_KIND["bb"]))
                         if st.session_state.get(p1k, support_opts[0]) not in support_opts:
                             st.session_state[p1k] = support_opts[0]
                         sup = selectbox_with_left_icon(
@@ -1360,7 +1380,7 @@ with st.container(key="outer_shell", border=False):
 
                         return picked_equip, picked_seaz, picked_unique
 
-                    if cookie in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "체리콜라맛 쿠키"):
+                    if cookie in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키"):
                         support_cookie = st.session_state.get(p1k, "")
                         picked_equip, picked_seaz, picked_unique = _render_party_detail("파티(서폿)", support_cookie, pe1k, ps1k, pu1k)
                         if support_cookie and picked_equip:
@@ -1370,7 +1390,7 @@ with st.container(key="outer_shell", border=False):
                         if support_cookie and picked_unique:
                             party_uniques_map[support_cookie] = picked_unique
 
-                    elif cookie in ("멜랑크림 쿠키", "흑보리맛 쿠키", "샤이닝베리맛 쿠키", "피닉스페퍼 쿠키", "블루멜로우맛 쿠키"):
+                    elif cookie in ("멜랑크림 쿠키", "흑보리맛 쿠키", "샤이닝베리맛 쿠키", "피닉스페퍼 쿠키", "블루멜로우맛 쿠키", "스타더스트 쿠키"):
                         support_cookie = st.session_state.get(p1k, "")
                         strike_cookie = st.session_state.get(p2k, "윈드파라거스 쿠키")
                         picked_support_equip, picked_support_seaz, picked_support_unique = _render_party_detail("파티(서폿)", support_cookie, pe1k, ps1k, pu1k)
@@ -1500,7 +1520,7 @@ with st.container(key="outer_shell", border=False):
                         party_sets=st.session_state.get("party_sets", {}),
                         party_seaz=st.session_state.get("party_seaz", {}),
                         party_uniques=st.session_state.get("party_uniques", {}),
-                        step=STEP_FIXED,
+                        step=1,
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
@@ -1537,6 +1557,23 @@ with st.container(key="outer_shell", border=False):
                         unique_override=unique_override_local,
                     )
                     best_kind = "bb"
+
+                elif kind_cookie == "stardust":
+                    fn = getattr(sim, "optimize_stardust_cycle", None)
+                    if fn is None:
+                        raise ValueError("sim.optimize_stardust_cycle 가 없습니다.")
+                    best = fn(
+                        seaz_name=st.session_state.seaz,
+                        party=st.session_state.party,
+                        party_sets=st.session_state.get("party_sets", {}),
+                        party_seaz=st.session_state.get("party_seaz", {}),
+                        party_uniques=st.session_state.get("party_uniques", {}),
+                        step=2,
+                        progress_cb=cb,
+                        equip_override=equip_override_local,
+                        unique_override=unique_override_local,
+                    )
+                    best_kind = "stardust"
 
                 elif kind_cookie == "shining":
                     fn = getattr(sim, "optimize_shining_berry_cycle", None)
@@ -1606,6 +1643,23 @@ with st.container(key="outer_shell", border=False):
                         unique_override=unique_override_local,
                     )
                     best_kind = "marble"
+
+                elif kind_cookie == "milky":
+                    fn = getattr(sim, "optimize_milky_way_cycle", None)
+                    if fn is None:
+                        raise ValueError("sim.optimize_milky_way_cycle 가 없습니다.")
+                    best = fn(
+                        seaz_name=st.session_state.seaz,
+                        party=st.session_state.party,
+                        party_sets=st.session_state.get("party_sets", {}),
+                        party_seaz=st.session_state.get("party_seaz", {}),
+                        party_uniques=st.session_state.get("party_uniques", {}),
+                        step=1,
+                        progress_cb=cb,
+                        equip_override=equip_override_local,
+                        unique_override=unique_override_local,
+                    )
+                    best_kind = "milky"
 
                 elif kind_cookie == "cherry":
                     fn = getattr(sim, "optimize_cherry_cola_cycle", None)
@@ -1682,7 +1736,7 @@ with st.container(key="outer_shell", border=False):
                         party_sets=st.session_state.get("party_sets", {}),
                         party_seaz=st.session_state.get("party_seaz", {}),
                         party_uniques=st.session_state.get("party_uniques", {}),
-                        step=STEP_FIXED,
+                        step=1,
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
@@ -1699,7 +1753,7 @@ with st.container(key="outer_shell", border=False):
                         party_sets=st.session_state.get("party_sets", {}),
                         party_seaz=st.session_state.get("party_seaz", {}),
                         party_uniques=st.session_state.get("party_uniques", {}),
-                        step=STEP_FIXED,
+                        step=1,
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
@@ -1744,7 +1798,7 @@ with st.container(key="outer_shell", border=False):
             if not best:
                 st.caption(_tr_text("설정 후 실행하면 결과가 표시됩니다."))
             else:
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "moonlight"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "moonlight", "milky", "stardust"):
                     c1, c2, c3 = st.columns(3, gap="small")
                     c1.metric("DPS", f"{best.get('dps', 0):,.4f}")
                     c2.metric(_tr_text("1사이클 시간(s)"), f"{best.get('cycle_total_time', 0):,.4f}")
@@ -1793,7 +1847,7 @@ with st.container(key="outer_shell", border=False):
 
                 sugar_target_text = _current_sugar_set_text()
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust"):
                     tab1, tab2, tab3, tab4 = st.tabs([_tr_text("결과"), _tr_text("최종 스탯"), _tr_text("사이클 기여도"), ("Shard Placement" if (_english_on() or st.session_state.get("ui_language_widget") == "English") else "조각 배치")])
                 else:
                     tab1, tab2, tab3, tab4 = st.tabs([_tr_text("결과"), _tr_text("최종 스탯"), _tr_text("사이클 기여도"), ("Shard Placement" if (_english_on() or st.session_state.get("ui_language_widget") == "English") else "조각 배치")])
@@ -1811,7 +1865,7 @@ with st.container(key="outer_shell", border=False):
                                 rows.append({"항목": k, "값": v})
 
                         rows = []
-                        if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "neon", "moonlight"):
+                        if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "neon", "moonlight", "milky", "stardust"):
                             add(rows, "쿠키", best.get("cookie", ""))
                             add(rows, "장비", best.get("equip", ""))
                             add(rows, "시즈나이트", best.get("seaz", ""))
@@ -1841,7 +1895,7 @@ with st.container(key="outer_shell", border=False):
 
                     setting_df = make_setting_df(best, kind)
 
-                    if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "moonlight"):
+                    if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "moonlight", "milky", "stardust"):
                         p_df = pretty_potentials(best.get("potentials", {}))
                         s_df = pretty_shards(best.get("shards", {}))
                     elif kind in ("isle", "neon"):
@@ -1862,7 +1916,7 @@ with st.container(key="outer_shell", border=False):
                     """
                     st.markdown(html, unsafe_allow_html=True)
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust"):
                     with tab2:
                         stats = best.get("stats", {})
                         if not stats:
@@ -1875,7 +1929,7 @@ with st.container(key="outer_shell", border=False):
                             )
                             render_final_stats_grid(atk_df, crit_df, common_df, skill_df, surv_df, amp_df)
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust"):
                     with tab3:
                         cb = best.get("cycle_breakdown", {})
                         df = cycle_breakdown_df(cb)
@@ -1889,7 +1943,7 @@ with st.container(key="outer_shell", border=False):
                             col_widths=(1, 1, 1),
                         )
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust"):
                     with tab4:
                         render_shard_placement_tab(sugar_target_text, english=(_english_on() or st.session_state.get("ui_language_widget") == "English"), theme_mode=st.session_state.get("ui_theme", "system"), glass_shards=best.get("shards", {}))
 

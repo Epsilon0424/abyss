@@ -851,10 +851,7 @@ with st.container(key="outer_shell", border=False):
                             getattr(sim, "black_barley_allowed_seaz", lambda: None)()
                             or [x for x in getattr(sim, "SEAZNITES", {}).keys() if str(x).startswith("페퍼루비:")]
                         )
-                    if cookie != "스타더스트 쿠키":
-                        seaz_options = hide_breeder_when_not_wind(cookie, seaz_options) or [""]
-                    else:
-                        seaz_options = seaz_options or [""]
+                    seaz_options = hide_breeder_when_not_wind(cookie, seaz_options) or [""]
 
                     PREFERRED_SEAZ = "페퍼루비:영예로운 기사도"
                     cur = st.session_state.get(sk, "")

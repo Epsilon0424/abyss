@@ -80,7 +80,6 @@ from ui.adjustment_notes import (
     _adjustment_note_keys_for_main_cookie,
     _adjustment_note_keys_for_party,
     _adjustment_note_keys_for_seaz,
-    _adjustment_note_keys_for_striker_sugar_shard,
     _adjustment_note_keys_for_unique,
     _merge_note_keys,
     render_adjustment_summary,
@@ -1266,11 +1265,6 @@ with st.container(key="outer_shell", border=False):
                         _adjustment_note_keys_for_equip(st.session_state.get(ek, ""), owner_cookie_name=cookie, main_cookie_name=cookie),
                         _adjustment_note_keys_for_seaz(st.session_state.get(sk, ""), owner_cookie_name=cookie),
                         _adjustment_note_keys_for_party([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")]),
-                        # 메인 또는 파티에 스트라이커가 있으면 설탕유리조각 파쇄 보정 안내를 포함한다.
-                        _adjustment_note_keys_for_striker_sugar_shard(
-                            cookie,
-                            [st.session_state.get(p1k, ""), st.session_state.get(p2k, "")],
-                        ),
                     )
 
                     def _render_party_detail(

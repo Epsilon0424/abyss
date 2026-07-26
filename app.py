@@ -1936,7 +1936,7 @@ with st.container(key="outer_shell", border=False):
 
                 if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust"):
                     with tab4:
-                        render_shard_placement_tab(sugar_target_text, english=(_english_on() or st.session_state.get("ui_language_widget") == "English"), theme_mode=st.session_state.get("ui_theme", "system"), glass_shards=best.get("shards", {}))
+                        render_shard_placement_tab(sugar_target_text, english=(_english_on() or st.session_state.get("ui_language_widget") == "English"), theme_mode=st.session_state.get("ui_theme", "system"), glass_shards=best.get("shards", {}), cookie_name=(best.get("cookie", "") or st.session_state.get("cookie", "")))
 
             if st.session_state.last_run:
                 st.caption(f"{_tr_text('실행:')} {st.session_state.last_run}")

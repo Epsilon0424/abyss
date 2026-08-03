@@ -4,6 +4,7 @@
 from .common import *
 from .common import _resolve_equip_list_override, _min_crit_slots_needed_for_crit100_generic, _resolve_unique_list_override
 from functools import lru_cache
+from typing import Sequence
 
 # =====================================================
 # 피닉스페퍼 쿠키
@@ -50,26 +51,44 @@ PHOENIX_ULT1_COEFF = 5.893 * 7.0  # 궁극기 [우화비천] 피해 계수: 589.
 PHOENIX_ULT2_COEFF = 5.893 * 7.0  # 궁극기 [천략우화] 피해 계수: 589.3%×7
 PHOENIX_ULT3_COEFF = 18.2754 * 8.0  # 궁극기 [천지재화] 피해 계수: 1827.54%×8
 
-PHOENIX_CYCLE_TOKENS = [
-    "B4", "B4", "TRI", "U1",
-    "B4", "B4", "TRI", "U2", "U3",
-    "B4", "B4"
-]
+PHOENIX_CYCLE_TIME = 30.0
+PHOENIX_ROTATION_CYCLES = (
+    # 1사이클: 특특특 궁1 4평 4평 특특특 궁2궁3 4평 4평 특특특 궁1
+    ("TRI", "U1", "B4", "B4", "TRI", "U2", "U3", "B4", "B4", "TRI", "U1"),
+    # 2사이클: 4평 4평 특특특 궁2궁3 4평 4평 특특특 궁1 4평 4평 특특특 궁2
+    ("B4", "B4", "TRI", "U2", "U3", "B4", "B4", "TRI", "U1", "B4", "B4", "TRI", "U2"),
+    # 3사이클: 궁3 4평 4평 특특특 궁1 4평 4평 특특특 궁2 궁3 4평 4평
+    ("U3", "B4", "B4", "TRI", "U1", "B4", "B4", "TRI", "U2", "U3", "B4", "B4"),
+)
+PHOENIX_ROTATION_TOKENS = tuple(
+    token
+    for cycle_tokens in PHOENIX_ROTATION_CYCLES
+    for token in cycle_tokens
+)
 
 # =====================================================
 # Helpers - 히트/이벤트 계산
 # =====================================================
-def _phoenix_cycle_hits(artifact_name: str) -> int:
-    basic_hits = 6 * (3 + 3 + 1 + 1)
-    special_hits = 3 * (2 + 19 + 3) if artifact_name == "타오르는 생의 시작" else 3 * (2 + 10 + 1)
-    ult_hits = (7 + 7 + 8)
-    return int(basic_hits + special_hits + ult_hits)
+def _phoenix_rotation_hits(tokens: Sequence[str], artifact_name: str) -> int:
+    """90초 연속 회전에서 마음의 불티 발동 판정에 사용되는 총 타수를 계산한다."""
+    arti_on = artifact_name == "타오르는 생의 시작"
+    tri_hits = (2 + 13 + 3) if arti_on else (2 + 10 + 1)
+    hit_counts = {
+        "B4": 3 + 3 + 1 + 1,
+        "TRI": tri_hits,
+        "U1": 7,
+        "U2": 7,
+        "U3": 8,
+    }
+    return sum(hit_counts[token] for token in tokens)
 
 # =====================================================
 # Calculation - 사이클 딜
 # =====================================================
 def phoenix_pepper_cycle_damage_fast(stats: Dict[str, float], party: List[str], artifact_name: str) -> Dict[str, float]:
-    total_time = 30.0
+    cycle_count = len(PHOENIX_ROTATION_CYCLES)
+    total_time = PHOENIX_CYCLE_TIME * cycle_count
+    # 세 개의 30초 사이클을 90초 연속 회전으로 계산한 뒤 30초 평균값으로 환산한다.
     # 스킬별 처음부터 계산: skill_damage_from_start 사용
 
     # 승급 배율
@@ -105,7 +124,7 @@ def phoenix_pepper_cycle_damage_fast(stats: Dict[str, float], party: List[str], 
     }
 
     total_direct = 0.0
-    for tok in PHOENIX_CYCLE_TOKENS:
+    for tok in PHOENIX_ROTATION_TOKENS:
         if tok == "B4":
             dmg = skill_damage_from_start(stats, PHOENIX_BASIC_COEFF, "basic")
             breakdown["basic"] += dmg
@@ -124,12 +143,15 @@ def phoenix_pepper_cycle_damage_fast(stats: Dict[str, float], party: List[str], 
         elif tok == "U2":
             dmg = skill_damage_from_start(stats, PHOENIX_ULT2_COEFF, "ult", extra_skill_mult=promo_ult_mult)
             breakdown["ult"] += dmg
-        else:
+        elif tok == "U3":
             dmg = skill_damage_from_start(stats, PHOENIX_ULT3_COEFF, "ult", extra_skill_mult=promo_ult_mult)
             breakdown["ult"] += dmg
+        else:
+            raise ValueError(f"알 수 없는 피닉스페퍼 사이클 토큰입니다: {tok}")
         total_direct += dmg
 
-    ember_hits = _phoenix_cycle_hits(artifact_name)
+    # 마음의 불티 카운트는 30초마다 초기화하지 않고 90초 연속 타수에 대해 누적한다.
+    ember_hits = _phoenix_rotation_hits(PHOENIX_ROTATION_TOKENS, artifact_name)
     ember_procs = ember_hits // 10
     # [마음의 불티]는 발생 조건은 패시브지만 실제 피해는 궁극기 피해 취급이다.
     # 따라서 skill_type="ult"로 계산하고, 별도로 승급 [뜨겁게 피어나는 마음] +80%만 곱한다.
@@ -139,7 +161,8 @@ def phoenix_pepper_cycle_damage_fast(stats: Dict[str, float], party: List[str], 
     breakdown["ult"] += ember_total
     breakdown["passive"] = 0.0
 
-    sugar_proc = skill_damage_from_start(stats, float(stats.get("sugar_brilliance_coeff", 0.0)), "none") * sum(1 for t in PHOENIX_CYCLE_TOKENS if str(t).startswith("U"))
+    ult_count = sum(1 for token in PHOENIX_ROTATION_TOKENS if token.startswith("U"))
+    sugar_proc = skill_damage_from_start(stats, float(stats.get("sugar_brilliance_coeff", 0.0)), "none") * ult_count
     if sugar_proc:
         total_direct += sugar_proc
         breakdown["proc"] += sugar_proc
@@ -150,28 +173,36 @@ def phoenix_pepper_cycle_damage_fast(stats: Dict[str, float], party: List[str], 
     unique_total = skill_damage_from_start(stats, float(stats.get("unique_extra_coeff", 0.0)), "none") * total_time
     breakdown["unique"] = unique_total
 
-    total_damage = math.floor(total_direct + ember_total + strike + unique_total)
+    rotation_total_damage = math.floor(total_direct + ember_total + strike + unique_total)
 
     local_raw = stats.get("_local", None)
     local: Dict[str, Any] = local_raw if isinstance(local_raw, dict) else {}
     elem_dmg_mult = float(local.get("elem_dmg_mult", stats.get("elem_dmg_mult", 1.0)))
     if elem_dmg_mult != 1.0:
-        total_damage *= elem_dmg_mult
+        rotation_total_damage *= elem_dmg_mult
         for k in breakdown:
             breakdown[k] *= elem_dmg_mult
 
-    dps = total_damage / 30.0
+    # RESULT에는 다른 쿠키와 동일하게 30초 기준 평균 사이클 총딜과 DPS를 표시한다.
+    average_cycle_damage = rotation_total_damage / cycle_count
+    average_breakdown = {key: value / cycle_count for key, value in breakdown.items()}
+    dps = rotation_total_damage / total_time
     return {
-        "total_damage": total_damage,
-        "total_time": total_time,
+        "total_damage": average_cycle_damage,
+        "total_time": PHOENIX_CYCLE_TIME,
         "dps": dps,
-        "breakdown_basic": breakdown["basic"],
-        "breakdown_special": breakdown["special"],
-        "breakdown_ult": breakdown["ult"],
-        "breakdown_passive": breakdown["passive"],
-        "breakdown_proc": breakdown["proc"],
-        "breakdown_strike": breakdown["strike"],
-        "breakdown_unique": breakdown["unique"],
+        "rotation_total_damage": rotation_total_damage,
+        "rotation_total_time": total_time,
+        "rotation_cycle_count": cycle_count,
+        "rotation_total_hits": ember_hits,
+        "rotation_ember_procs": ember_procs,
+        "breakdown_basic": average_breakdown["basic"],
+        "breakdown_special": average_breakdown["special"],
+        "breakdown_ult": average_breakdown["ult"],
+        "breakdown_passive": average_breakdown["passive"],
+        "breakdown_proc": average_breakdown["proc"],
+        "breakdown_strike": average_breakdown["strike"],
+        "breakdown_unique": average_breakdown["unique"],
     }
 
 # =====================================================

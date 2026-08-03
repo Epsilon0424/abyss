@@ -32,7 +32,7 @@ BASE_STATS_STARDUST = {
         "friendship_atk": friendship_atk_for("스타더스트 쿠키"),
         "elem_atk": 0.0,
         "atk_pct": STARDUST_PROMO_ATK_PCT + STARDUST_WEAPON_ATK_PCT,
-        "crit_rate": 0.25,
+        "crit_rate": 0.15,
         "crit_dmg": 1.50,
         "armor_pen": 0.0,
         "final_dmg": 0.04 + STARDUST_WEAPON_FINAL_DMG,

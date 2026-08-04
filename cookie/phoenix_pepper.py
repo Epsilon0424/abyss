@@ -52,6 +52,14 @@ PHOENIX_ULT2_COEFF = 5.893 * 7.0  # 궁극기 [천략우화] 피해 계수: 589.
 PHOENIX_ULT3_COEFF = 18.2754 * 8.0  # 궁극기 [천지재화] 피해 계수: 1827.54%×8
 
 PHOENIX_CYCLE_TIME = 30.0
+PHOENIX_GREAT_RULER_SEAZ = "레몬그라스톤:위대한 통치자"
+# 위대한 통치자 메인 효과(궁극기 사용 후 15초)가 끊긴 상태에서 사용하는 궁극기 위치.
+# 해당 궁극기는 시즈 보조 옵션은 유지하고, 메인 효과의 궁극기 피해 증가만 제외한다.
+PHOENIX_GREAT_RULER_INACTIVE_ULT_POSITIONS = frozenset({
+    (0, 10),  # 1사이클 마지막 궁1
+    (1, 12),  # 2사이클 마지막 궁2
+    (2, 0),   # 3사이클 첫 궁3
+})
 PHOENIX_ROTATION_CYCLES = (
     # 1사이클: 특특특 궁1 4평 4평 특특특 궁2궁3 4평 4평 특특특 궁1
     ("TRI", "U1", "B4", "B4", "TRI", "U2", "U3", "B4", "B4", "TRI", "U1"),
@@ -85,7 +93,12 @@ def _phoenix_rotation_hits(tokens: Sequence[str], artifact_name: str) -> int:
 # =====================================================
 # Calculation - 사이클 딜
 # =====================================================
-def phoenix_pepper_cycle_damage_fast(stats: Dict[str, float], party: List[str], artifact_name: str) -> Dict[str, float]:
+def phoenix_pepper_cycle_damage_fast(
+    stats: Dict[str, float],
+    party: List[str],
+    artifact_name: str,
+    seaz_name: str = "",
+) -> Dict[str, float]:
     cycle_count = len(PHOENIX_ROTATION_CYCLES)
     total_time = PHOENIX_CYCLE_TIME * cycle_count
     # 세 개의 30초 사이클을 90초 연속 회전으로 계산한 뒤 30초 평균값으로 환산한다.
@@ -140,28 +153,64 @@ def phoenix_pepper_cycle_damage_fast(stats: Dict[str, float], party: List[str], 
     ult3_unit = skill_damage_from_start(
         stats, PHOENIX_ULT3_COEFF, "ult", extra_skill_mult=promo_ult_mult
     )
+    ult_units = {"U1": ult1_unit, "U2": ult2_unit, "U3": ult3_unit}
+
+    # 위대한 통치자는 보조 옵션 궁극기 피해 +30%와 메인 효과 +30%가 합쳐져
+    # 효과 유지 중에는 총 +60%가 적용된다. 사용자가 표시한 세 궁극기에는
+    # 15초 메인 효과만 끊긴 것으로 보고, 보조 옵션 +30%는 그대로 유지한다.
+    inactive_ult_units: Dict[str, float] = {}
+    if seaz_name == PHOENIX_GREAT_RULER_SEAZ:
+        seaz_info = SEAZNITES.get(seaz_name, {}) or {}
+        great_ruler_main_bonus = float(
+            ((seaz_info.get("passive", {}) or {}).get("ult_dmg", 0.0))
+        )
+        if great_ruler_main_bonus:
+            inactive_stats = dict(stats)
+            inactive_stats.pop("_damage_context_cache", None)
+            inactive_stats["ult_dmg"] = (
+                float(inactive_stats.get("ult_dmg", 0.0)) - great_ruler_main_bonus
+            )
+            inactive_ult_units = {
+                "U1": skill_damage_from_start(
+                    inactive_stats,
+                    PHOENIX_ULT1_COEFF,
+                    "ult",
+                    extra_skill_mult=promo_ult_mult,
+                ),
+                "U2": skill_damage_from_start(
+                    inactive_stats,
+                    PHOENIX_ULT2_COEFF,
+                    "ult",
+                    extra_skill_mult=promo_ult_mult,
+                ),
+                "U3": skill_damage_from_start(
+                    inactive_stats,
+                    PHOENIX_ULT3_COEFF,
+                    "ult",
+                    extra_skill_mult=promo_ult_mult,
+                ),
+            }
 
     total_direct = 0.0
-    for tok in PHOENIX_ROTATION_TOKENS:
-        if tok == "B4":
-            dmg = basic_unit
-            breakdown["basic"] += dmg
-        elif tok == "TRI":
-            dmg = special1_unit + special2_unit + special3_unit
-            breakdown["special"] += special1_unit
-            breakdown["ult"] += special2_unit + special3_unit
-        elif tok == "U1":
-            dmg = ult1_unit
-            breakdown["ult"] += dmg
-        elif tok == "U2":
-            dmg = ult2_unit
-            breakdown["ult"] += dmg
-        elif tok == "U3":
-            dmg = ult3_unit
-            breakdown["ult"] += dmg
-        else:
-            raise ValueError(f"알 수 없는 피닉스페퍼 사이클 토큰입니다: {tok}")
-        total_direct += dmg
+    for cycle_index, cycle_tokens in enumerate(PHOENIX_ROTATION_CYCLES):
+        for token_index, tok in enumerate(cycle_tokens):
+            if tok == "B4":
+                dmg = basic_unit
+                breakdown["basic"] += dmg
+            elif tok == "TRI":
+                dmg = special1_unit + special2_unit + special3_unit
+                breakdown["special"] += special1_unit
+                breakdown["ult"] += special2_unit + special3_unit
+            elif tok in ult_units:
+                use_inactive_unit = (
+                    bool(inactive_ult_units)
+                    and (cycle_index, token_index) in PHOENIX_GREAT_RULER_INACTIVE_ULT_POSITIONS
+                )
+                dmg = inactive_ult_units[tok] if use_inactive_unit else ult_units[tok]
+                breakdown["ult"] += dmg
+            else:
+                raise ValueError(f"알 수 없는 피닉스페퍼 사이클 토큰입니다: {tok}")
+            total_direct += dmg
 
     # 마음의 불티 카운트는 30초마다 초기화하지 않고 90초 연속 타수에 대해 누적한다.
     ember_hits = _phoenix_rotation_hits(PHOENIX_ROTATION_TOKENS, artifact_name)
@@ -377,7 +426,12 @@ def optimize_phoenix_pepper_cycle(
                             stats: Dict[str, float],
                             artifact_name: str = artifact_name,
                         ) -> Dict[str, float]:
-                            return phoenix_pepper_cycle_damage_fast(stats, party, artifact_name)
+                            return phoenix_pepper_cycle_damage_fast(
+                                stats,
+                                party,
+                                artifact_name,
+                                seaz_name=seaz_name,
+                            )
 
                         shards_out, stats, cycle = optimize_damage_shards_for_fixed_combo(
                             template,

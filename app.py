@@ -37,6 +37,7 @@ from ui.session_keys import (
     party_seaz2_key,
     party_unique1_key,
     party_unique2_key,
+    potential_manual_key,
     reset_party_defaults_for_kind,
     seaz_key,
 )
@@ -122,6 +123,213 @@ def _theme_mode_label(mode: str) -> str:
 
 inject_styles()
 init_session_state()
+
+# =====================================================
+# Main-cookie potential controls
+# =====================================================
+POTENTIAL_SETTING_ORDER = (
+    "elem_atk",
+    "atk_pct",
+    "crit_rate",
+    "crit_dmg",
+    "armor_pen",
+    "buff_amp",
+    "debuff_amp",
+)
+POTENTIAL_SLOT_CAPS = {
+    "atk_pct": 8,
+    "crit_rate": 8,
+    "crit_dmg": 8,
+    "armor_pen": 4,
+    "elem_atk": 2,
+    "buff_amp": 4,
+    "debuff_amp": 4,
+}
+POTENTIAL_TOTAL_SLOTS = 8
+
+def _coerce_potential_slot_value(stat_key: str, raw_value) -> int:
+    cap = int(POTENTIAL_SLOT_CAPS[stat_key])
+    try:
+        value = int(str(raw_value).strip())
+    except (TypeError, ValueError):
+        value = 0
+    return max(0, min(cap, value))
+
+
+def _normalize_potential_config(raw) -> dict[str, int]:
+    raw = raw or {}
+    return {
+        key: _coerce_potential_slot_value(key, raw.get(key, 0))
+        for key in POTENTIAL_SETTING_ORDER
+    }
+
+def _default_manual_potential(cookie_name: str, selected_equip: str = "") -> dict[str, int]:
+    # 수동 설정은 자동 최적화 결과/쿠키별 고정값을 시작값으로 가져오지 않는다.
+    # 사용자가 처음 수동으로 전환했을 때 모든 항목이 0에서 시작하도록 한다.
+    return _normalize_potential_config({})
+
+def _invalidate_result_for_potential_change() -> None:
+    st.session_state.best = None
+    st.session_state.best_kind = None
+    st.session_state.last_run = None
+
+def _potential_saved_key(kind: str) -> str:
+    # 다이얼로그 안 number_input 위젯은 다이얼로그가 닫히면 Streamlit 위젯 수명주기에 따라
+    # session_state에서 정리될 수 있다. 실제 계산에 쓰는 값은 위젯 key와 분리해 영구 보관한다.
+    return f"potential_saved__{kind}"
+
+def _potential_editor_value_key(kind: str, stat_key: str) -> str:
+    # 팝업이 열려 있는 동안에만 쓰는 편집용 위젯 key.
+    return f"potential_editor__{kind}__{stat_key}"
+
+def _potential_user_saved_key(kind: str) -> str:
+    # 사용자가 팝업에서 '완료'를 눌러 확정한 수동값인지 구분한다.
+    # 이전 버전에서 자동값이 수동 시작값으로 저장돼 있던 세션도 0으로 한 번 초기화할 수 있다.
+    return f"potential_user_saved__{kind}"
+
+def _ensure_potential_state(cookie_name: str, kind: str, selected_equip: str = "") -> None:
+    manual_key = potential_manual_key(kind)
+    if manual_key not in st.session_state:
+        st.session_state[manual_key] = False
+
+    saved_key = _potential_saved_key(kind)
+    user_saved_key = _potential_user_saved_key(kind)
+
+    if user_saved_key not in st.session_state:
+        # 구버전에서 자동 최적화/쿠키 고정값이 수동 시작값으로 들어가 있던 상태를 제거한다.
+        st.session_state[user_saved_key] = False
+        st.session_state[saved_key] = _default_manual_potential(cookie_name, selected_equip)
+    elif saved_key not in st.session_state:
+        st.session_state[saved_key] = _default_manual_potential(cookie_name, selected_equip)
+    else:
+        # 사용자가 이미 확정한 값은 rerun/자동↔수동 전환 뒤에도 유지한다.
+        st.session_state[saved_key] = _normalize_potential_config(st.session_state.get(saved_key))
+
+def _manual_potential_from_state(kind: str) -> dict[str, int] | None:
+    if not bool(st.session_state.get(potential_manual_key(kind), False)):
+        return None
+    return _normalize_potential_config(st.session_state.get(_potential_saved_key(kind)))
+
+def _prepare_potential_dialog(kind: str) -> None:
+    # 이전 팝업 방식 호환용. 현재는 세부사항 탭 인라인 편집을 사용한다.
+    saved = _normalize_potential_config(st.session_state.get(_potential_saved_key(kind)))
+    for stat_key in POTENTIAL_SETTING_ORDER:
+        st.session_state[_potential_editor_value_key(kind, stat_key)] = str(int(saved.get(stat_key, 0)))
+
+
+def _on_potential_mode_change(kind: str) -> None:
+    # 자동/수동 전환 시 기존 계산 결과를 무효화하고,
+    # 수동으로 전환하면 마지막 수동값을 숫자 입력칸에 복사한다.
+    _invalidate_result_for_potential_change()
+    if bool(st.session_state.get(potential_manual_key(kind), False)):
+        saved = _normalize_potential_config(st.session_state.get(_potential_saved_key(kind)))
+        for stat_key in POTENTIAL_SETTING_ORDER:
+            st.session_state[_potential_editor_value_key(kind, stat_key)] = str(int(saved.get(stat_key, 0)))
+
+
+def _potential_summary_text(kind: str) -> str:
+    pot = _manual_potential_from_state(kind) or {}
+    labels = getattr(sim, "POTENTIAL_KR", {})
+    parts = []
+    for stat_key in POTENTIAL_SETTING_ORDER:
+        count = int(pot.get(stat_key, 0) or 0)
+        if count > 0:
+            parts.append(f"{_tr_text(labels.get(stat_key, stat_key))} {count}")
+    return " · ".join(parts) if parts else _tr_text("설정값 없음")
+
+
+def _sanitize_potential_editor_value(kind: str, stat_key: str) -> None:
+    editor_key = _potential_editor_value_key(kind, stat_key)
+    st.session_state[editor_key] = str(_coerce_potential_slot_value(stat_key, st.session_state.get(editor_key, 0)))
+
+
+def _render_potential_stepper(kind: str, stat_key: str) -> None:
+    """잠재력 한 항목을 인라인 2열용 숫자 입력으로 렌더링한다.
+
+    +/- 버튼은 제거하고 숫자 입력만 남긴다.
+    """
+    label = _tr_text(getattr(sim, "POTENTIAL_KR", {}).get(stat_key, stat_key))
+    editor_key = _potential_editor_value_key(kind, stat_key)
+    with st.container(key=f"potential_statitem__{kind}__{stat_key}", border=False):
+        st.markdown(
+            f'<div class="potential-stepper-label">{_tr_html(label)}</div>',
+            unsafe_allow_html=True,
+        )
+        st.text_input(
+            label,
+            key=editor_key,
+            label_visibility="collapsed",
+            on_change=_sanitize_potential_editor_value,
+            args=(kind, stat_key),
+        )
+
+
+def _ensure_inline_potential_editor(kind: str) -> None:
+    """세부사항 탭의 수동 잠재력 입력값을 확정 저장값과 동기화한다."""
+    saved = _normalize_potential_config(st.session_state.get(_potential_saved_key(kind)))
+    for stat_key in POTENTIAL_SETTING_ORDER:
+        editor_key = _potential_editor_value_key(kind, stat_key)
+        if editor_key not in st.session_state:
+            st.session_state[editor_key] = str(int(saved.get(stat_key, 0)))
+        else:
+            st.session_state[editor_key] = str(_coerce_potential_slot_value(stat_key, st.session_state.get(editor_key, 0)))
+
+
+def _sync_inline_potential(kind: str) -> tuple[dict[str, int], int]:
+    """현재 인라인 입력값을 즉시 수동 잠재력 확정값으로 저장한다."""
+    editing = _normalize_potential_config({
+        stat_key: st.session_state.get(_potential_editor_value_key(kind, stat_key), 0)
+        for stat_key in POTENTIAL_SETTING_ORDER
+    })
+    saved_key = _potential_saved_key(kind)
+    previous = _normalize_potential_config(st.session_state.get(saved_key))
+    if editing != previous:
+        st.session_state[saved_key] = dict(editing)
+        st.session_state[_potential_user_saved_key(kind)] = True
+        _invalidate_result_for_potential_change()
+    used = sum(int(v) for v in editing.values())
+    return editing, used
+
+
+def _render_inline_potential_editor(kind: str) -> int:
+    """수동 잠재력을 세부사항 탭 안에 2열 고정으로 표시한다."""
+    _ensure_inline_potential_editor(kind)
+    with st.container(key=f"potential_inline_body_{kind}", border=False):
+        # 앞 3행은 잠재력 스탯 2개씩 배치한다.
+        # Streamlit 컨테이너 margin은 내부 wrapper에 의해 상쇄될 수 있어서,
+        # 2행부터는 실제 높이를 가진 spacer를 넣어 행 간격을 확실하게 만든다.
+        for row_index, row_start in enumerate((0, 2, 4)):
+            if row_index > 0:
+                st.markdown('<div class="potential-row-spacer"></div>', unsafe_allow_html=True)
+            row_key = (
+                f"potential_row_first__{kind}"
+                if row_index == 0
+                else f"potential_row__{kind}__{row_index}"
+            )
+            with st.container(key=row_key, border=False):
+                row_cols = st.columns(2, gap="small")
+                for offset, stat_key in enumerate(POTENTIAL_SETTING_ORDER[row_start:row_start + 2]):
+                    with row_cols[offset]:
+                        _render_potential_stepper(kind, stat_key)
+
+        # 마지막 행은 디버프 증폭 + 잠재력 사용량을 한 줄에 배치해 빈 공간을 없앤다.
+        st.markdown('<div class="potential-row-spacer"></div>', unsafe_allow_html=True)
+        with st.container(key=f"potential_row__{kind}__3", border=False):
+            row_cols = st.columns(2, gap="small")
+            with row_cols[0]:
+                _render_potential_stepper(kind, POTENTIAL_SETTING_ORDER[6])
+
+            _editing, used = _sync_inline_potential(kind)
+            status_class = "potential-slot-ok" if used == POTENTIAL_TOTAL_SLOTS else "potential-slot-bad"
+            with row_cols[1]:
+                with st.container(key=f"potential_status_cell__{kind}", border=False):
+                    st.markdown(
+                        f'<div class="potential-slot-status {status_class}">'
+                        f'<span>{_tr_html("잠재력")}</span><b>{used}/{POTENTIAL_TOTAL_SLOTS}</b>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+    return used
 
 # =====================================================
 # Selection restore and option helpers
@@ -278,6 +486,7 @@ def _main_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
         "피닉스페퍼 쿠키": "로드 나이트메어의 뒤틀린 기억",
         "블루멜로우맛 쿠키": "로드 나이트메어의 뒤틀린 기억",
         "스타더스트 쿠키": "로드 나이트메어의 뒤틀린 기억",
+        "잭프루트맛 쿠키": "스타더스트 쿠키의 기억",
     }
     striker_preferred = {
         "윈드파라거스 쿠키": "꿈열차에 실린 기억",
@@ -313,9 +522,10 @@ def _main_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     clean: list[str] = []
     for x in opts:
         sx = str(x).strip()
-        if sx and sx in unique_defs and sx not in seen:
-            clean.append(sx)
-            seen.add(sx)
+        if not sx or sx not in unique_defs or sx in seen:
+            continue
+        clean.append(sx)
+        seen.add(sx)
 
     if preferred not in clean:
         preferred = clean[0] if clean else ""
@@ -504,6 +714,7 @@ with st.container(key="outer_shell", border=False):
             st.markdown('<div class="h-title select-title-clean">SELECT</div>', unsafe_allow_html=True)
 
             basic_tab, detail_tab, setting_tab = st.tabs([_tr_text("기본"), _tr_text("세부사항"), "Setting"])
+            manual_potential_invalid = False
 
             with basic_tab:
                 render_ctl_label("속성")
@@ -690,6 +901,8 @@ with st.container(key="outer_shell", border=False):
                         equip_options = (getattr(sim, "milky_way_allowed_equips", lambda: [""])() or [""])
                     elif cookie == "스타더스트 쿠키":
                         equip_options = (getattr(sim, "stardust_allowed_equips", lambda: [""])() or [""])
+                    elif cookie == "잭프루트맛 쿠키":
+                        equip_options = (getattr(sim, "jackfruit_allowed_equips", lambda: ["시간관리국의 제복"])() or ["시간관리국의 제복"])
                     elif cookie == "체리콜라맛 쿠키":
                         equip_options = (getattr(sim, "cherry_cola_allowed_equips", lambda: [""])() or [""])
                     elif cookie == "블루멜로우맛 쿠키":
@@ -837,6 +1050,54 @@ with st.container(key="outer_shell", border=False):
                         icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
                     )
 
+                        st.session_state.party = [sup, strike]
+
+                elif cookie == "잭프루트맛 쿠키":
+                    seaz_options = (
+                        getattr(sim, "jackfruit_allowed_seaz", lambda: [])()
+                        or [getattr(sim, "JACKFRUIT_FIXED_SEAZ", "소다마린:거침없는 습격자")]
+                    )
+                    seaz_options = hide_breeder_when_not_wind(cookie, [str(x) for x in seaz_options if str(x).strip()])
+                    preferred_seaz = getattr(sim, "JACKFRUIT_FIXED_SEAZ", "소다마린:거침없는 습격자")
+                    if not seaz_options:
+                        seaz_options = [preferred_seaz]
+
+                    cur = st.session_state.get(sk, "")
+                    if (not cur) or (cur not in seaz_options):
+                        st.session_state[sk] = preferred_seaz if preferred_seaz in seaz_options else seaz_options[0]
+
+                    seaz = selectbox_with_left_icon(
+                        label="시즈나이트 선택",
+                        options=seaz_options,
+                        key=sk,
+                        icon_path=_icon_for_seaz(st.session_state.get(sk, seaz_options[0] if seaz_options else "")),
+                    )
+                    st.session_state.seaz = seaz
+                    st.session_state.main_unique = _render_main_unique_select(cookie, muk)
+
+                    with st.container(key="party_group_jackfruit", border=False):
+                        render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                        support_opts = SUPPORT_COOKIE_OPTIONS
+                        init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["jackfruit"])
+                        if st.session_state.get(p1k, support_opts[0]) not in support_opts:
+                            st.session_state[p1k] = support_opts[0]
+                        sup = selectbox_with_left_icon(
+                            label="파티(서폿)",
+                            options=support_opts,
+                            key=p1k,
+                            icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
+                        )
+
+                        strike_opts = STRIKE_COOKIE_OPTIONS
+                        init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND["jackfruit"])
+                        if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
+                            st.session_state[p2k] = strike_opts[0]
+                        strike = selectbox_with_left_icon(
+                            label="파티(스트)",
+                            options=strike_opts,
+                            key=p2k,
+                            icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
+                        )
                         st.session_state.party = [sup, strike]
 
                 elif cookie in ("흑보리맛 쿠키", "스타더스트 쿠키"):
@@ -1250,6 +1511,40 @@ with st.container(key="outer_shell", border=False):
 
             with detail_tab:
                 with st.container(key="detail_tab_body"):
+                    # 메인 쿠키 잠재력 설정: 세부사항 최상단에 배치
+                    _selected_equip_for_potential = st.session_state.get(ek, "")
+                    _ensure_potential_state(cookie, k, _selected_equip_for_potential)
+                    _potential_manual_key = potential_manual_key(k)
+
+                    with st.container(key=f"potential_mode_block_{k}", border=False):
+                        _potential_title_class = "potential-title potential-title-en" if _english_on() else "potential-title"
+                        st.markdown(
+                            f'<div class="ctl-label {_potential_title_class}">'
+                            f'<span class="potential-title-cookie">{_tr_html(cookie)}</span>'
+                            f'<span class="potential-title-name">{_tr_html("잠재력")}</span>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+                        # 잠재력 자동/수동 선택 앞 아이콘 테스트:
+                        # 장비 폴더의 `자동.png`를 두 상태 모두 공통으로 사용한다.
+                        selectbox_with_left_icon(
+                            label=_tr_text("잠재력 설정 방식"),
+                            options=[False, True],
+                            key=_potential_manual_key,
+                            icon_path=_icon_for_equip("자동"),
+                            format_func=lambda x: _tr_text("수동") if x else _tr_text("자동"),
+                            on_change=_on_potential_mode_change,
+                            args=(k,),
+                        )
+
+                        if bool(st.session_state.get(_potential_manual_key, False)):
+                            # 팝업 대신 세부사항 탭 안에서 바로 편집한다.
+                            # 좁은 화면에서도 한 줄에 잠재력 2개를 유지한다.
+                            _potential_used = _render_inline_potential_editor(k)
+                            manual_potential_invalid = (_potential_used != POTENTIAL_TOTAL_SLOTS)
+                        else:
+                            manual_potential_invalid = False
+
                     pe1k = party_equip1_key(k)
                     pe2k = party_equip2_key(k)
                     ps1k = party_seaz1_key(k)
@@ -1381,7 +1676,7 @@ with st.container(key="outer_shell", border=False):
                         if support_cookie and picked_unique:
                             party_uniques_map[support_cookie] = picked_unique
 
-                    elif cookie in ("멜랑크림 쿠키", "흑보리맛 쿠키", "샤이닝베리맛 쿠키", "피닉스페퍼 쿠키", "블루멜로우맛 쿠키", "스타더스트 쿠키"):
+                    elif cookie in ("멜랑크림 쿠키", "흑보리맛 쿠키", "샤이닝베리맛 쿠키", "피닉스페퍼 쿠키", "블루멜로우맛 쿠키", "스타더스트 쿠키", "잭프루트맛 쿠키"):
                         support_cookie = st.session_state.get(p1k, "")
                         strike_cookie = st.session_state.get(p2k, "윈드파라거스 쿠키")
                         picked_support_equip, picked_support_seaz, picked_support_unique = _render_party_detail("파티(서폿)", support_cookie, pe1k, ps1k, pu1k)
@@ -1467,7 +1762,7 @@ with st.container(key="outer_shell", border=False):
                 type="primary",
                 use_container_width=True,
                 key="run_btn",
-                disabled=no_cookie_for_element,
+                disabled=(no_cookie_for_element or manual_potential_invalid),
             )
 
             progress_slot = st.empty()
@@ -1503,6 +1798,7 @@ with st.container(key="outer_shell", border=False):
                 if st.session_state.mode == "선택(수동)":
                     equip_override_local = st.session_state.equip or None
                 unique_override_local = st.session_state.get("main_unique") or None
+                potential_override_local = _manual_potential_from_state(kind_cookie)
 
                 if kind_cookie == "wind":
                     best = sim.optimize_wind_cycle(
@@ -1515,6 +1811,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "wind"
 
@@ -1529,6 +1826,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "melan"
 
@@ -1546,6 +1844,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "bb"
 
@@ -1563,8 +1862,27 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "stardust"
+
+                elif kind_cookie == "jackfruit":
+                    fn = getattr(sim, "optimize_jackfruit_cycle", None)
+                    if fn is None:
+                        raise ValueError("sim.optimize_jackfruit_cycle 가 없습니다.")
+                    best = fn(
+                        seaz_name=st.session_state.seaz,
+                        party=st.session_state.party,
+                        party_sets=st.session_state.get("party_sets", {}),
+                        party_seaz=st.session_state.get("party_seaz", {}),
+                        party_uniques=st.session_state.get("party_uniques", {}),
+                        step=1,
+                        progress_cb=cb,
+                        equip_override=equip_override_local,
+                        unique_override=unique_override_local,
+                        potential_override=potential_override_local,
+                    )
+                    best_kind = "jackfruit"
 
                 elif kind_cookie == "shining":
                     fn = getattr(sim, "optimize_shining_berry_cycle", None)
@@ -1580,6 +1898,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "shining"
 
@@ -1597,6 +1916,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "phoenix"
 
@@ -1614,6 +1934,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "lungsha"
 
@@ -1631,6 +1952,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "marble"
 
@@ -1648,6 +1970,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "milky"
 
@@ -1665,6 +1988,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "cherry"
 
@@ -1682,6 +2006,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "blue"
 
@@ -1696,6 +2021,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "isle"
 
@@ -1713,6 +2039,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "char"
 
@@ -1730,6 +2057,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "neon"
 
@@ -1747,6 +2075,7 @@ with st.container(key="outer_shell", border=False):
                         progress_cb=cb,
                         equip_override=equip_override_local,
                         unique_override=unique_override_local,
+                        potential_override=potential_override_local,
                     )
                     best_kind = "moonlight"
 
@@ -1757,7 +2086,7 @@ with st.container(key="outer_shell", border=False):
                 # 공통 후처리(필요한 것만)
                 # -----------------------------------------------------
                 # 서포터류 잠재 고정
-                if isinstance(best, dict) and best_kind in ("isle", "char", "neon"):
+                if isinstance(best, dict) and best_kind in ("isle", "char", "neon") and potential_override_local is None:
                     best["potentials"] = {"elem_atk": 2, "atk_pct": 2, "buff_amp": 4}
                 elif isinstance(best, dict) and best_kind == "moonlight":
                     # 달술 잠재는 유니크/장비/시즈 선택에 따라 최적화 함수에서 자동 배분한다.
@@ -1788,7 +2117,7 @@ with st.container(key="outer_shell", border=False):
             if not best:
                 st.caption(_tr_text("설정 후 실행하면 결과가 표시됩니다."))
             else:
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "moonlight", "milky", "stardust"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "moonlight", "milky", "stardust", "jackfruit"):
                     c1, c2, c3 = st.columns(3, gap="small")
                     c1.metric("DPS", f"{best.get('dps', 0):,.4f}")
                     c2.metric(_tr_text("1사이클 시간(s)"), f"{best.get('cycle_total_time', 0):,.4f}")
@@ -1837,7 +2166,7 @@ with st.container(key="outer_shell", border=False):
 
                 sugar_target_text = _current_sugar_set_text()
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
                     tab1, tab2, tab3, tab4 = st.tabs([_tr_text("결과"), _tr_text("최종 스탯"), _tr_text("사이클 기여도"), ("Shard Placement" if (_english_on() or st.session_state.get("ui_language_widget") == "English") else "조각 배치")])
                 else:
                     tab1, tab2, tab3, tab4 = st.tabs([_tr_text("결과"), _tr_text("최종 스탯"), _tr_text("사이클 기여도"), ("Shard Placement" if (_english_on() or st.session_state.get("ui_language_widget") == "English") else "조각 배치")])
@@ -1855,7 +2184,7 @@ with st.container(key="outer_shell", border=False):
                                 rows.append({"항목": k, "값": v})
 
                         rows = []
-                        if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "neon", "moonlight", "milky", "stardust"):
+                        if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
                             add(rows, "쿠키", best.get("cookie", ""))
                             add(rows, "장비", best.get("equip", ""))
                             add(rows, "시즈나이트", best.get("seaz", ""))
@@ -1885,7 +2214,7 @@ with st.container(key="outer_shell", border=False):
 
                     setting_df = make_setting_df(best, kind)
 
-                    if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "moonlight", "milky", "stardust"):
+                    if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "moonlight", "milky", "stardust", "jackfruit"):
                         p_df = pretty_potentials(best.get("potentials", {}))
                         s_df = pretty_shards(best.get("shards", {}))
                     elif kind in ("isle", "neon"):
@@ -1906,7 +2235,7 @@ with st.container(key="outer_shell", border=False):
                     """
                     st.markdown(html, unsafe_allow_html=True)
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
                     with tab2:
                         stats = best.get("stats", {})
                         if not stats:
@@ -1919,7 +2248,7 @@ with st.container(key="outer_shell", border=False):
                             )
                             render_final_stats_grid(atk_df, crit_df, common_df, skill_df, surv_df, amp_df)
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
                     with tab3:
                         cb = best.get("cycle_breakdown", {})
                         df = cycle_breakdown_df(cb)
@@ -1933,7 +2262,7 @@ with st.container(key="outer_shell", border=False):
                             col_widths=(1, 1, 1),
                         )
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
                     with tab4:
                         render_shard_placement_tab(sugar_target_text, english=(_english_on() or st.session_state.get("ui_language_widget") == "English"), theme_mode=st.session_state.get("ui_theme", "system"), glass_shards=best.get("shards", {}), cookie_name=(best.get("cookie", "") or st.session_state.get("cookie", "")))
 

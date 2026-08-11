@@ -71,9 +71,11 @@ from ui.assets import (
     _icon_for_element,
     _icon_for_equip,
     _icon_for_language,
+    _icon_for_potential_stat,
     _icon_for_role,
     _icon_for_seaz,
     _icon_for_theme,
+    _icon_data_uri,
     selectbox_with_left_icon,
 )
 from ui.adjustment_notes import (
@@ -250,11 +252,17 @@ def _render_potential_stepper(kind: str, stat_key: str) -> None:
     """
     label = _tr_text(getattr(sim, "POTENTIAL_KR", {}).get(stat_key, stat_key))
     editor_key = _potential_editor_value_key(kind, stat_key)
+    icon_src = _icon_data_uri(_icon_for_potential_stat(stat_key), 18)
     with st.container(key=f"potential_statitem__{kind}__{stat_key}", border=False):
         st.markdown(
             f'<div class="potential-stepper-label">{_tr_html(label)}</div>',
             unsafe_allow_html=True,
         )
+        if icon_src:
+            st.markdown(
+                f'<div class="potential-stat-icon"><img src="{_html.escape(icon_src, quote=True)}" /></div>',
+                unsafe_allow_html=True,
+            )
         st.text_input(
             label,
             key=editor_key,
@@ -1517,11 +1525,9 @@ with st.container(key="outer_shell", border=False):
                     _potential_manual_key = potential_manual_key(k)
 
                     with st.container(key=f"potential_mode_block_{k}", border=False):
-                        _potential_title_class = "potential-title potential-title-en" if _english_on() else "potential-title"
                         st.markdown(
-                            f'<div class="ctl-label {_potential_title_class}">'
-                            f'<span class="potential-title-cookie">{_tr_html(cookie)}</span>'
-                            f'<span class="potential-title-name">{_tr_html("잠재력")}</span>'
+                            f'<div class="ctl-label potential-title label-word-wrap">'
+                            f'{_tr_html(cookie)} {_tr_html("잠재력")}'
                             f'</div>',
                             unsafe_allow_html=True,
                         )

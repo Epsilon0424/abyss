@@ -2,6 +2,7 @@
 # Imports
 # =====================================================
 import html as _html
+import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -106,6 +107,55 @@ from ui.shard_placement import render_shard_placement_tab
 # Page setup and base style
 # =====================================================
 st.set_page_config(page_title="THE ABYSS RAID COOKIE LAB", layout="wide")
+
+
+ADSENSE_CLIENT_ID = "ca-pub-1996550481368074"
+
+
+def _render_adsense_site_verification() -> None:
+    """AdSense 사이트 확인용 스크립트를 앱에 삽입한다."""
+    st.html(
+        f'''<script async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_CLIENT_ID}"
+  crossorigin="anonymous"></script>''',
+        unsafe_allow_javascript=True,
+    )
+
+
+_render_adsense_site_verification()
+
+
+def _private_config(name: str) -> str:
+    """광고 코드처럼 배포 환경에서만 필요한 값을 환경변수/Streamlit Secrets에서 읽는다."""
+    env_value = os.getenv(name, "").strip()
+    if env_value:
+        return env_value
+
+    try:
+        value = st.secrets.get(name, "")
+    except Exception:
+        return ""
+    return str(value or "").strip()
+
+
+def _render_bottom_ad() -> None:
+    """Notes 아래 광고 영역을 렌더링한다."""
+    ad_html = _private_config("BOTTOM_AD_HTML")
+    if ad_html:
+        st.html(
+            f'<div class="global-ad global-ad-live">{ad_html}</div>',
+            unsafe_allow_javascript=True,
+        )
+        return
+
+    st.markdown(
+        """
+<div class="global-ad global-ad-placeholder" aria-label="Advertisement">
+  <span>광고</span>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 # UI 테마 선택값
 # - system: 기기/브라우저 색상 설정을 따름
@@ -2555,3 +2605,5 @@ f"""
 """,
 unsafe_allow_html=True,
 )
+
+_render_bottom_ad()

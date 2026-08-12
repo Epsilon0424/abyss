@@ -2,7 +2,6 @@
 # Imports
 # =====================================================
 import html as _html
-import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -107,77 +106,6 @@ from ui.shard_placement import render_shard_placement_tab
 # Page setup and base style
 # =====================================================
 st.set_page_config(page_title="THE ABYSS RAID COOKIE LAB", layout="wide")
-
-
-ADSENSE_CLIENT_ID = "ca-pub-1996550481368074"
-
-
-def _inject_adsense_head_tags() -> None:
-    """AdSense 소유권 확인용 메타 태그와 로더를 실제 문서 head에 추가한다."""
-    st.html(
-        f'''<script>
-(() => {{
-  const head = document.head;
-  if (!head) return;
-
-  const metaName = "google-adsense-account";
-  let meta = head.querySelector(`meta[name="${{metaName}}"]`);
-  if (!meta) {{
-    meta = document.createElement("meta");
-    meta.setAttribute("name", metaName);
-    head.appendChild(meta);
-  }}
-  meta.setAttribute("content", "{ADSENSE_CLIENT_ID}");
-
-  const scriptSrc = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_CLIENT_ID}";
-  let loader = head.querySelector(`script[src="${{scriptSrc}}"]`);
-  if (!loader) {{
-    loader = document.createElement("script");
-    loader.async = true;
-    loader.src = scriptSrc;
-    loader.crossOrigin = "anonymous";
-    head.appendChild(loader);
-  }}
-}})();
-</script>''',
-        unsafe_allow_javascript=True,
-    )
-
-
-_inject_adsense_head_tags()
-
-
-def _private_config(name: str) -> str:
-    """광고 코드처럼 배포 환경에서만 필요한 값을 환경변수/Streamlit Secrets에서 읽는다."""
-    env_value = os.getenv(name, "").strip()
-    if env_value:
-        return env_value
-
-    try:
-        value = st.secrets.get(name, "")
-    except Exception:
-        return ""
-    return str(value or "").strip()
-
-
-def _render_bottom_ad() -> None:
-    """Notes 아래 광고 영역을 렌더링한다."""
-    ad_html = _private_config("BOTTOM_AD_HTML")
-    if ad_html:
-        st.html(
-            f'<div class="global-ad global-ad-live">{ad_html}</div>',
-            unsafe_allow_javascript=True,
-        )
-        return
-
-    st.markdown(
-        """
-<div class="global-ad global-ad-placeholder" aria-label="Advertisement">
-  <span>광고</span>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
 
 # UI 테마 선택값
 # - system: 기기/브라우저 색상 설정을 따름
@@ -2627,5 +2555,3 @@ f"""
 """,
 unsafe_allow_html=True,
 )
-
-_render_bottom_ad()

@@ -112,17 +112,39 @@ st.set_page_config(page_title="THE ABYSS RAID COOKIE LAB", layout="wide")
 ADSENSE_CLIENT_ID = "ca-pub-1996550481368074"
 
 
-def _render_adsense_site_verification() -> None:
-    """AdSense 사이트 확인용 스크립트를 앱에 삽입한다."""
+def _inject_adsense_head_tags() -> None:
+    """AdSense 소유권 확인용 메타 태그와 로더를 실제 문서 head에 추가한다."""
     st.html(
-        f'''<script async
-  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_CLIENT_ID}"
-  crossorigin="anonymous"></script>''',
+        f'''<script>
+(() => {{
+  const head = document.head;
+  if (!head) return;
+
+  const metaName = "google-adsense-account";
+  let meta = head.querySelector(`meta[name="${{metaName}}"]`);
+  if (!meta) {{
+    meta = document.createElement("meta");
+    meta.setAttribute("name", metaName);
+    head.appendChild(meta);
+  }}
+  meta.setAttribute("content", "{ADSENSE_CLIENT_ID}");
+
+  const scriptSrc = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={ADSENSE_CLIENT_ID}";
+  let loader = head.querySelector(`script[src="${{scriptSrc}}"]`);
+  if (!loader) {{
+    loader = document.createElement("script");
+    loader.async = true;
+    loader.src = scriptSrc;
+    loader.crossOrigin = "anonymous";
+    head.appendChild(loader);
+  }}
+}})();
+</script>''',
         unsafe_allow_javascript=True,
     )
 
 
-_render_adsense_site_verification()
+_inject_adsense_head_tags()
 
 
 def _private_config(name: str) -> str:

@@ -15,6 +15,9 @@ from ui.app_config import (
     COOKIE_ELEMENT,
     DEFAULT_PARTY_SLOT1_BY_KIND,
     DEFAULT_PARTY_SLOT2_BY_KIND,
+    DEFAULT_PARTY_SLOT3_BY_KIND,
+    DEFAULT_PARTY_SLOT4_BY_KIND,
+    DPS_COOKIE_OPTIONS,
     ELEMENT_OPTIONS,
     SUPPORT_STEP_FIXED,
     STRIKE_COOKIE_OPTIONS,
@@ -31,12 +34,20 @@ from ui.session_keys import (
     mode_key,
     party1_key,
     party2_key,
+    party3_key,
+    party4_key,
     party_equip1_key,
     party_equip2_key,
+    party_equip3_key,
+    party_equip4_key,
     party_seaz1_key,
     party_seaz2_key,
+    party_seaz3_key,
+    party_seaz4_key,
     party_unique1_key,
     party_unique2_key,
+    party_unique3_key,
+    party_unique4_key,
     potential_manual_key,
     reset_party_defaults_for_kind,
     seaz_key,
@@ -45,6 +56,7 @@ from ui.session_keys import (
 from ui.result_helpers import (
     build_stat_tables,
     cycle_breakdown_df,
+    party_damage_contribution_df,
     hide_breeder_when_not_wind,
     labeled_table_html,
     pretty_potentials,
@@ -379,6 +391,18 @@ def _restore_selection_widgets_for_language_toggle() -> None:
         if len(party) >= 2 and party[1]:
             st.session_state[party2_key(k)] = party[1]
 
+        # 추가 딜러 슬롯은 파티 배열의 위치가 메인 쿠키 역할에 따라 달라질 수 있으므로
+        # 역할을 기준으로 복구한다. 메인이 서포터/스트라이커면 딜러 2명을 유지한다.
+        dealer_cookies = [
+            name
+            for name in party
+            if name != cur_cookie and str(getattr(sim, "COOKIE_ROLE", {}).get(name, "")).lower() == "dps"
+        ]
+        dealer_cookie = dealer_cookies[0] if dealer_cookies else ""
+        dealer_cookie2 = dealer_cookies[1] if len(dealer_cookies) >= 2 else ""
+        st.session_state[party3_key(k)] = dealer_cookie or DEFAULT_PARTY_SLOT3_BY_KIND.get(k, "없음")
+        st.session_state[party4_key(k)] = dealer_cookie2 or DEFAULT_PARTY_SLOT4_BY_KIND.get(k, "없음")
+
         party_sets = dict(st.session_state.get("party_sets") or {})
         party_seaz = dict(st.session_state.get("party_seaz") or {})
         party_uniques = dict(st.session_state.get("party_uniques") or {})
@@ -399,6 +423,20 @@ def _restore_selection_widgets_for_language_toggle() -> None:
                 st.session_state[party_seaz2_key(k)] = party_seaz[p]
             if p in party_uniques:
                 st.session_state[party_unique2_key(k)] = party_uniques[p]
+        if dealer_cookie:
+            if dealer_cookie in party_sets:
+                st.session_state[party_equip3_key(k)] = party_sets[dealer_cookie]
+            if dealer_cookie in party_seaz:
+                st.session_state[party_seaz3_key(k)] = party_seaz[dealer_cookie]
+            if dealer_cookie in party_uniques:
+                st.session_state[party_unique3_key(k)] = party_uniques[dealer_cookie]
+        if dealer_cookie2:
+            if dealer_cookie2 in party_sets:
+                st.session_state[party_equip4_key(k)] = party_sets[dealer_cookie2]
+            if dealer_cookie2 in party_seaz:
+                st.session_state[party_seaz4_key(k)] = party_seaz[dealer_cookie2]
+            if dealer_cookie2 in party_uniques:
+                st.session_state[party_unique4_key(k)] = party_uniques[dealer_cookie2]
     except Exception:
         # 언어 전환 보정이 실패해도 앱 자체는 계속 실행되도록 한다.
         pass
@@ -458,8 +496,11 @@ def _party_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     if cookie_name in ("샬롯맛 쿠키", "네온데니쉬맛 쿠키"):
         return support_options, "멜랑크림 쿠키의 순수한 기억"
 
-    if cookie_name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키"):
+    if cookie_name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키", "스테인드누가맛 쿠키"):
         return striker_options, "꿈열차에 실린 기억"
+
+    if str(getattr(sim, "COOKIE_ROLE", {}).get(cookie_name, "")).lower() == "dps":
+        return _main_unique_options_for_cookie(cookie_name)
 
     return [], ""
 
@@ -502,6 +543,7 @@ def _main_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
         "마블베리맛 쿠키": "꿈열차에 실린 기억",
         "밀키웨이맛 쿠키": "꿈열차에 실린 기억",
         "체리콜라맛 쿠키": "꿈열차에 실린 기억",
+        "스테인드누가맛 쿠키": "꿈열차에 실린 기억",
     }
     support_preferred = {
         "이슬맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
@@ -570,6 +612,7 @@ def _party_equip_options_for_cookie(
     cookie_name: str,
     main_cookie_name: str = "",
     role_label: str = "",
+    has_moonlight_support: bool = False,
 ) -> tuple[list[str], str]:
     """파티 쿠키별 장비 후보 / 기본값.
 
@@ -586,7 +629,7 @@ def _party_equip_options_for_cookie(
         return name in ("이슬맛 쿠키", "샬롯맛 쿠키", "네온데니쉬맛 쿠키", "달빛술사 쿠키")
 
     def _is_striker_cookie(name: str) -> bool:
-        return name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키")
+        return name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키", "스테인드누가맛 쿠키")
 
     if cookie_name == "이슬맛 쿠키":
         opts = keep(["전설의 유령해적", "영원의 대마술사"])
@@ -610,9 +653,35 @@ def _party_equip_options_for_cookie(
         # 단, 최적화의 잠재/일반 설탕유리조각 후보는 딜러형으로 계산한다.
         opts = keep(["황금 예복", "유성우의 향연"])
         preferred = "황금 예복"
+    elif cookie_name == "스테인드누가맛 쿠키":
+        opts = keep(["유성우의 향연", "황금 예복"])
+        preferred = "유성우의 향연"
     elif cookie_name in ("룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "윈드파라거스 쿠키"):
         opts = keep(["황금 예복", "유성우의 향연"])
         preferred = "황금 예복"
+    elif str(getattr(sim, "COOKIE_ROLE", {}).get(cookie_name, "")).lower() == "dps":
+        equip_fn_by_cookie = {
+            "멜랑크림 쿠키": "melan_allowed_equips",
+            "흑보리맛 쿠키": "black_barley_allowed_equips",
+            "샤이닝베리맛 쿠키": "shining_berry_allowed_equips",
+            "피닉스페퍼 쿠키": "phoenix_pepper_allowed_equips",
+            "블루멜로우맛 쿠키": "blue_mallow_allowed_equips",
+            "스타더스트 쿠키": "stardust_allowed_equips",
+            "잭프루트맛 쿠키": "jackfruit_allowed_equips",
+        }
+        fn_name = equip_fn_by_cookie.get(cookie_name, "")
+        fn = getattr(sim, fn_name, None) if fn_name else None
+        raw_opts = fn() if callable(fn) else []
+        opts = keep([str(x) for x in (raw_opts or []) if str(x).strip()])
+        # 파티 딜러 기본 장비:
+        # - 달빛술사가 서포터로 포함되어 있으면 시간셋
+        # - 그 외에는 모두 설탕셋
+        if "딜러" in role_label and has_moonlight_support and "시간관리국의 제복" in opts:
+            preferred = "시간관리국의 제복"
+        elif "딜러" in role_label and "달콤한 설탕 깃털" in opts:
+            preferred = "달콤한 설탕 깃털"
+        else:
+            preferred = opts[0] if opts else ""
     else:
         opts = []
         preferred = ""
@@ -657,6 +726,30 @@ def _party_seaz_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     elif cookie_name == "체리콜라맛 쿠키":
         opts = (getattr(sim, "cherry_cola_allowed_seaz", lambda: [])() or ["리치코랄:빛나는 은하수"])
         preferred = getattr(sim, "CHERRY_COLA_FIXED_SEAZ", "리치코랄:빛나는 은하수")
+    elif cookie_name == "스테인드누가맛 쿠키":
+        opts = (getattr(sim, "stained_nougat_allowed_seaz", lambda: [])() or [getattr(sim, "STAINED_NOUGAT_FIXED_SEAZ", "리치코랄:빛나는 은하수")])
+        preferred = getattr(sim, "STAINED_NOUGAT_FIXED_SEAZ", "리치코랄:빛나는 은하수")
+    elif cookie_name == "멜랑크림 쿠키":
+        opts = (getattr(sim, "melan_allowed_seaz", lambda: [])() or [x for x in all_seaz if str(x).startswith("바닐라몬드:")])
+        preferred = "바닐라몬드:치열한 선봉자"
+    elif cookie_name == "흑보리맛 쿠키":
+        opts = (getattr(sim, "black_barley_allowed_seaz", lambda: [])() or [x for x in all_seaz if str(x).startswith("페퍼루비:")])
+        preferred = "페퍼루비:영예로운 기사도"
+    elif cookie_name == "샤이닝베리맛 쿠키":
+        opts = (getattr(sim, "shining_berry_allowed_seaz", lambda: [])() or [x for x in all_seaz if str(x).startswith("레몬그라스톤:")])
+        preferred = "레몬그라스톤:추격자의 결의"
+    elif cookie_name == "피닉스페퍼 쿠키":
+        opts = (getattr(sim, "phoenix_pepper_allowed_seaz", lambda: [])() or [x for x in all_seaz if str(x).startswith("레몬그라스톤:")])
+        preferred = getattr(sim, "FIXED_SEAZ_PHOENIX", "레몬그라스톤:추격자의 결의")
+    elif cookie_name == "블루멜로우맛 쿠키":
+        opts = (getattr(sim, "blue_mallow_allowed_seaz", lambda: [])() or [x for x in all_seaz if str(x).startswith("바닐라몬드:")])
+        preferred = getattr(sim, "BLUE_MALLOW_DEFAULT_SEAZ", "바닐라몬드:치열한 선봉자")
+    elif cookie_name == "스타더스트 쿠키":
+        opts = (getattr(sim, "stardust_allowed_seaz", lambda: [])() or [x for x in all_seaz if str(x).startswith("페퍼루비:")])
+        preferred = "페퍼루비:영예로운 기사도"
+    elif cookie_name == "잭프루트맛 쿠키":
+        opts = (getattr(sim, "jackfruit_allowed_seaz", lambda: [])() or [getattr(sim, "JACKFRUIT_FIXED_SEAZ", "소다마린:거침없는 습격자")])
+        preferred = getattr(sim, "JACKFRUIT_FIXED_SEAZ", "소다마린:거침없는 습격자")
     elif cookie_name == "이슬맛 쿠키":
         opts = [x for x in all_seaz if str(x).startswith("허브그린드:") or str(x).startswith("민트쿼츠:")]
         preferred = getattr(sim, "FIXED_SEAZ_ISLE", "허브그린드:번뜩이는 기지")
@@ -830,7 +923,7 @@ with st.container(key="outer_shell", border=False):
                     st.session_state[seaz_key(k2)] = ""
 
                     # 쿠키 종류별 기본 파티 슬롯을 다시 맞춘다.
-                    # 딜러는 서포터 1명과 스트라이커 1명, 서포터는 스트라이커 1명을 기본으로 둔다.
+                    # 기존 역할 슬롯을 기본값으로 되돌리고, 추가 딜러 슬롯은 선택 안 함으로 초기화한다.
                     reset_party_defaults_for_kind(k2)
 
                     st.session_state[mode_key(k2)] = "최적(자동)"
@@ -842,6 +935,10 @@ with st.container(key="outer_shell", border=False):
                 sk = seaz_key(k)
                 p1k = party1_key(k)
                 p2k = party2_key(k)
+                p3k = party3_key(k)
+                p4k = party4_key(k)
+                init_once(p3k, DEFAULT_PARTY_SLOT3_BY_KIND.get(k, "없음"))
+                init_once(p4k, DEFAULT_PARTY_SLOT4_BY_KIND.get(k, "없음"))
                 mk = mode_key(k)
                 ek = equip_key(k)
                 muk = main_unique_key(k)
@@ -850,7 +947,7 @@ with st.container(key="outer_shell", border=False):
                 # =====================================================
 
                 # 장비 라벨 + 계산 보정 안내
-                render_main_equip_label_with_adjustment(k, st.session_state.get(ek, ""), [st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                render_main_equip_label_with_adjustment(k, st.session_state.get(ek, ""), [st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
 
                 # =====================================================
                 # 장비 선택 (드롭다운에 "자동" 포함)
@@ -913,6 +1010,8 @@ with st.container(key="outer_shell", border=False):
                         equip_options = (getattr(sim, "jackfruit_allowed_equips", lambda: ["시간관리국의 제복"])() or ["시간관리국의 제복"])
                     elif cookie == "체리콜라맛 쿠키":
                         equip_options = (getattr(sim, "cherry_cola_allowed_equips", lambda: [""])() or [""])
+                    elif cookie == "스테인드누가맛 쿠키":
+                        equip_options = (getattr(sim, "stained_nougat_allowed_equips", lambda: [""])() or [""])
                     elif cookie == "블루멜로우맛 쿠키":
                         equip_options = (getattr(sim, "blue_mallow_allowed_equips", lambda: [""])() or [""])
                     elif cookie == "피닉스페퍼 쿠키":
@@ -952,8 +1051,8 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    # 파티: 서폿 1명만 (이슬/샬롯)
-                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    # 역할 파티: 서포터 1명 선택
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
                     support_opts = SUPPORT_COOKIE_OPTIONS
                     init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND.get(k, DEFAULT_PARTY_SLOT1_BY_KIND["wind"]))
                     if st.session_state.get(p1k, support_opts[0]) not in support_opts:
@@ -966,7 +1065,7 @@ with st.container(key="outer_shell", border=False):
                     )
                     st.session_state.party = [sup]
 
-                elif cookie in ("룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키"):
+                elif cookie in ("룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "스테인드누가맛 쿠키"):
                     if cookie == "룽샤맛 쿠키":
                         seaz_options = (
                             getattr(sim, "lungsha_allowed_seaz", lambda: [getattr(sim, "LUNGSHA_FIXED_SEAZ", "리치코랄:빛나는 은하수")])()
@@ -979,6 +1078,12 @@ with st.container(key="outer_shell", border=False):
                             or [getattr(sim, "MARBLE_BERRY_FIXED_SEAZ", "리치코랄:빛나는 은하수")]
                         )
                         fixed_seaz = getattr(sim, "MARBLE_BERRY_FIXED_SEAZ", "리치코랄:빛나는 은하수")
+                    elif cookie == "스테인드누가맛 쿠키":
+                        seaz_options = (
+                            getattr(sim, "stained_nougat_allowed_seaz", lambda: [getattr(sim, "STAINED_NOUGAT_FIXED_SEAZ", "리치코랄:빛나는 은하수")])()
+                            or [getattr(sim, "STAINED_NOUGAT_FIXED_SEAZ", "리치코랄:빛나는 은하수")]
+                        )
+                        fixed_seaz = getattr(sim, "STAINED_NOUGAT_FIXED_SEAZ", "리치코랄:빛나는 은하수")
                     else:
                         seaz_options = (
                             getattr(sim, "milky_way_allowed_seaz", lambda: [getattr(sim, "MILKY_WAY_FIXED_SEAZ", "리치코랄:빛나는 은하수")])()
@@ -998,7 +1103,7 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = st.session_state[sk]
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
                     support_opts = SUPPORT_COOKIE_OPTIONS
                     init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["wind"])
                     if st.session_state.get(p1k, support_opts[0]) not in support_opts:
@@ -1032,33 +1137,32 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    with st.container(key="party_group", border=False):
-                        render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
 
-                        # 역할 고정: 서폿 1(이슬/샬롯 선택) + 스트 1(윈드 고정)
-                        support_opts = SUPPORT_COOKIE_OPTIONS
-                        init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["melan"])
-                        if st.session_state.get(p1k, support_opts[0]) not in support_opts:
-                            st.session_state[p1k] = support_opts[0]
-                        sup = selectbox_with_left_icon(
+                    # 역할 파티: 서포터 1명 + 스트라이커 1명 선택
+                    support_opts = SUPPORT_COOKIE_OPTIONS
+                    init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["melan"])
+                    if st.session_state.get(p1k, support_opts[0]) not in support_opts:
+                        st.session_state[p1k] = support_opts[0]
+                    sup = selectbox_with_left_icon(
                         label="파티(서폿)",
                         options=support_opts,
                         key=p1k,
                         icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
                     )
 
-                        strike_opts = STRIKE_COOKIE_OPTIONS
-                        init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND.get(k, "윈드파라거스 쿠키"))
-                        if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
-                            st.session_state[p2k] = strike_opts[0]
-                        strike = selectbox_with_left_icon(
+                    strike_opts = STRIKE_COOKIE_OPTIONS
+                    init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND.get(k, "윈드파라거스 쿠키"))
+                    if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
+                        st.session_state[p2k] = strike_opts[0]
+                    strike = selectbox_with_left_icon(
                         label="파티(스트)",
                         options=strike_opts,
                         key=p2k,
                         icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
                     )
 
-                        st.session_state.party = [sup, strike]
+                    st.session_state.party = [sup, strike]
 
                 elif cookie == "잭프루트맛 쿠키":
                     seaz_options = (
@@ -1083,30 +1187,29 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    with st.container(key="party_group_jackfruit", border=False):
-                        render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
-                        support_opts = SUPPORT_COOKIE_OPTIONS
-                        init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["jackfruit"])
-                        if st.session_state.get(p1k, support_opts[0]) not in support_opts:
-                            st.session_state[p1k] = support_opts[0]
-                        sup = selectbox_with_left_icon(
-                            label="파티(서폿)",
-                            options=support_opts,
-                            key=p1k,
-                            icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
-                        )
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
+                    support_opts = SUPPORT_COOKIE_OPTIONS
+                    init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["jackfruit"])
+                    if st.session_state.get(p1k, support_opts[0]) not in support_opts:
+                        st.session_state[p1k] = support_opts[0]
+                    sup = selectbox_with_left_icon(
+                        label="파티(서폿)",
+                        options=support_opts,
+                        key=p1k,
+                        icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
+                    )
 
-                        strike_opts = STRIKE_COOKIE_OPTIONS
-                        init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND["jackfruit"])
-                        if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
-                            st.session_state[p2k] = strike_opts[0]
-                        strike = selectbox_with_left_icon(
-                            label="파티(스트)",
-                            options=strike_opts,
-                            key=p2k,
-                            icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
-                        )
-                        st.session_state.party = [sup, strike]
+                    strike_opts = STRIKE_COOKIE_OPTIONS
+                    init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND["jackfruit"])
+                    if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
+                        st.session_state[p2k] = strike_opts[0]
+                    strike = selectbox_with_left_icon(
+                        label="파티(스트)",
+                        options=strike_opts,
+                        key=p2k,
+                        icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
+                    )
+                    st.session_state.party = [sup, strike]
 
                 elif cookie in ("흑보리맛 쿠키", "스타더스트 쿠키"):
                     if cookie == "스타더스트 쿠키":
@@ -1135,32 +1238,31 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    with st.container(key="party_group", border=False):
-                        render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
 
-                        support_opts = SUPPORT_COOKIE_OPTIONS
-                        init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND.get(k, DEFAULT_PARTY_SLOT1_BY_KIND["bb"]))
-                        if st.session_state.get(p1k, support_opts[0]) not in support_opts:
-                            st.session_state[p1k] = support_opts[0]
-                        sup = selectbox_with_left_icon(
+                    support_opts = SUPPORT_COOKIE_OPTIONS
+                    init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND.get(k, DEFAULT_PARTY_SLOT1_BY_KIND["bb"]))
+                    if st.session_state.get(p1k, support_opts[0]) not in support_opts:
+                        st.session_state[p1k] = support_opts[0]
+                    sup = selectbox_with_left_icon(
                         label="파티(서폿)",
                         options=support_opts,
                         key=p1k,
                         icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
                     )
 
-                        strike_opts = STRIKE_COOKIE_OPTIONS
-                        init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND.get(k, "윈드파라거스 쿠키"))
-                        if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
-                            st.session_state[p2k] = strike_opts[0]
-                        strike = selectbox_with_left_icon(
+                    strike_opts = STRIKE_COOKIE_OPTIONS
+                    init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND.get(k, "윈드파라거스 쿠키"))
+                    if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
+                        st.session_state[p2k] = strike_opts[0]
+                    strike = selectbox_with_left_icon(
                         label="파티(스트)",
                         options=strike_opts,
                         key=p2k,
                         icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
                     )
 
-                        st.session_state.party = [sup, strike]
+                    st.session_state.party = [sup, strike]
 
                 elif cookie == "샤이닝베리맛 쿠키":
                     seaz_options = (
@@ -1183,32 +1285,31 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    with st.container(key="party_group_shining", border=False):
-                        render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
 
-                        support_opts = SUPPORT_COOKIE_OPTIONS
-                        init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["shining"])
-                        if st.session_state.get(p1k, support_opts[0]) not in support_opts:
-                            st.session_state[p1k] = support_opts[0]
-                        sup = selectbox_with_left_icon(
-                            label="파티(서폿)",
-                            options=support_opts,
-                            key=p1k,
-                            icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
-                        )
+                    support_opts = SUPPORT_COOKIE_OPTIONS
+                    init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["shining"])
+                    if st.session_state.get(p1k, support_opts[0]) not in support_opts:
+                        st.session_state[p1k] = support_opts[0]
+                    sup = selectbox_with_left_icon(
+                        label="파티(서폿)",
+                        options=support_opts,
+                        key=p1k,
+                        icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
+                    )
 
-                        strike_opts = STRIKE_COOKIE_OPTIONS
-                        init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND.get(k, "윈드파라거스 쿠키"))
-                        if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
-                            st.session_state[p2k] = strike_opts[0]
-                        strike = selectbox_with_left_icon(
-                            label="파티(스트)",
-                            options=strike_opts,
-                            key=p2k,
-                            icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
-                        )
+                    strike_opts = STRIKE_COOKIE_OPTIONS
+                    init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND.get(k, "윈드파라거스 쿠키"))
+                    if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
+                        st.session_state[p2k] = strike_opts[0]
+                    strike = selectbox_with_left_icon(
+                        label="파티(스트)",
+                        options=strike_opts,
+                        key=p2k,
+                        icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
+                    )
 
-                        st.session_state.party = [sup, strike]
+                    st.session_state.party = [sup, strike]
 
                 elif cookie == "체리콜라맛 쿠키":
                     seaz_options = (
@@ -1229,7 +1330,7 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
                     with st.container(key="party_group_cherry", border=False):
-                        render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                        render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
 
                         support_opts = SUPPORT_COOKIE_OPTIONS
                         init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["cherry"])
@@ -1268,32 +1369,31 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    with st.container(key="party_group_phoenix", border=False):
-                        render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
 
-                        support_opts = SUPPORT_COOKIE_OPTIONS
-                        init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["phoenix"])
-                        if st.session_state.get(p1k, support_opts[0]) not in support_opts:
-                            st.session_state[p1k] = support_opts[0]
-                        sup = selectbox_with_left_icon(
-                            label="파티(서폿)",
-                            options=support_opts,
-                            key=p1k,
-                            icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
-                        )
+                    support_opts = SUPPORT_COOKIE_OPTIONS
+                    init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["phoenix"])
+                    if st.session_state.get(p1k, support_opts[0]) not in support_opts:
+                        st.session_state[p1k] = support_opts[0]
+                    sup = selectbox_with_left_icon(
+                        label="파티(서폿)",
+                        options=support_opts,
+                        key=p1k,
+                        icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
+                    )
 
-                        strike_opts = STRIKE_COOKIE_OPTIONS
-                        init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND.get("phoenix", "윈드파라거스 쿠키"))
-                        if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
-                            st.session_state[p2k] = strike_opts[0]
-                        strike = selectbox_with_left_icon(
-                            label="파티(스트)",
-                            options=strike_opts,
-                            key=p2k,
-                            icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
-                        )
+                    strike_opts = STRIKE_COOKIE_OPTIONS
+                    init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND.get("phoenix", "윈드파라거스 쿠키"))
+                    if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
+                        st.session_state[p2k] = strike_opts[0]
+                    strike = selectbox_with_left_icon(
+                        label="파티(스트)",
+                        options=strike_opts,
+                        key=p2k,
+                        icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
+                    )
 
-                        st.session_state.party = [sup, strike]
+                    st.session_state.party = [sup, strike]
 
                 elif cookie == "블루멜로우맛 쿠키":
                     seaz_options = (
@@ -1317,33 +1417,32 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    with st.container(key="party_group_blue", border=False):
-                        render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
 
-                        support_opts = SUPPORT_COOKIE_OPTIONS
-                        init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["blue"])
-                        # 블루멜로우 기본 파티 서포터는 샬롯이지만, 사용자가 직접 고른 서포터는 유지한다.
-                        if st.session_state.get(p1k, support_opts[0]) not in support_opts:
-                            st.session_state[p1k] = DEFAULT_PARTY_SLOT1_BY_KIND["blue"] if DEFAULT_PARTY_SLOT1_BY_KIND["blue"] in support_opts else support_opts[0]
-                        sup = selectbox_with_left_icon(
-                            label="파티(서폿)",
-                            options=support_opts,
-                            key=p1k,
-                            icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
-                        )
+                    support_opts = SUPPORT_COOKIE_OPTIONS
+                    init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["blue"])
+                    # 블루멜로우 기본 파티 서포터는 샬롯이지만, 사용자가 직접 고른 서포터는 유지한다.
+                    if st.session_state.get(p1k, support_opts[0]) not in support_opts:
+                        st.session_state[p1k] = DEFAULT_PARTY_SLOT1_BY_KIND["blue"] if DEFAULT_PARTY_SLOT1_BY_KIND["blue"] in support_opts else support_opts[0]
+                    sup = selectbox_with_left_icon(
+                        label="파티(서폿)",
+                        options=support_opts,
+                        key=p1k,
+                        icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
+                    )
 
-                        strike_opts = STRIKE_COOKIE_OPTIONS
-                        init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND["blue"])
-                        if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
-                            st.session_state[p2k] = strike_opts[0]
-                        strike = selectbox_with_left_icon(
-                            label="파티(스트)",
-                            options=strike_opts,
-                            key=p2k,
-                            icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
-                        )
+                    strike_opts = STRIKE_COOKIE_OPTIONS
+                    init_once(p2k, DEFAULT_PARTY_SLOT2_BY_KIND["blue"])
+                    if st.session_state.get(p2k, strike_opts[0]) not in strike_opts:
+                        st.session_state[p2k] = strike_opts[0]
+                    strike = selectbox_with_left_icon(
+                        label="파티(스트)",
+                        options=strike_opts,
+                        key=p2k,
+                        icon_path=_icon_for_cookie(st.session_state.get(p2k, strike_opts[0] if strike_opts else ""), COOKIE_ELEMENT),
+                    )
 
-                        st.session_state.party = [sup, strike]
+                    st.session_state.party = [sup, strike]
 
                 # -------------------------
                 # 3) 이슬(서폿) / 샬롯(서폿)
@@ -1372,7 +1471,7 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = picked_seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
                     strike_opts = STRIKE_COOKIE_OPTIONS
                     init_once(p1k, "윈드파라거스 쿠키")
                     if st.session_state.get(p1k, strike_opts[0]) not in strike_opts:
@@ -1386,7 +1485,7 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.party = [strike]
 
                 elif cookie == "샬롯맛 쿠키":
-                    # 샬롯 메인 시뮬 + 역할 고정(서폿) => 파티는 스트(윈드) 고정
+                    # 샬롯 메인 시뮬: 역할 파티는 스트라이커 1명 선택
 
                     PREFERRED_SEAZ_CHAR = "허브그린드:가벼운 손길"
 
@@ -1426,7 +1525,7 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
                     strike_opts = STRIKE_COOKIE_OPTIONS
                     init_once(p1k, "윈드파라거스 쿠키")
                     if st.session_state.get(p1k, strike_opts[0]) not in strike_opts:
@@ -1465,7 +1564,7 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
                     strike_opts = STRIKE_COOKIE_OPTIONS
                     init_once(p1k, "윈드파라거스 쿠키")
                     if st.session_state.get(p1k, strike_opts[0]) not in strike_opts:
@@ -1501,7 +1600,7 @@ with st.container(key="outer_shell", border=False):
                     st.session_state.seaz = seaz
                     st.session_state.main_unique = _render_main_unique_select(cookie, muk)
 
-                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")])
+                    render_party_label_with_adjustment([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
                     strike_opts = STRIKE_COOKIE_OPTIONS
                     init_once(p1k, "윈드파라거스 쿠키")
                     if st.session_state.get(p1k, strike_opts[0]) not in strike_opts:
@@ -1516,6 +1615,58 @@ with st.container(key="outer_shell", border=False):
 
                 else:
                     raise ValueError(f"지원하지 않는 쿠키: {cookie}")
+
+                # 딜러 슬롯은 역할 파티 바로 아래에 이어 붙여서 한 그룹처럼 보이게 한다.
+                # 메인이 딜러면 추가 딜러 1명, 메인이 서포터/스트라이커면 딜러 2명을 선택한다.
+                main_role = str(getattr(sim, "COOKIE_ROLE", {}).get(cookie, "")).lower()
+                dealer_slot_count = 1 if main_role == "dps" else 2
+
+                with st.container(key="party_dealer_group", border=False):
+                    dealer_opts = ["없음"] + list(DPS_COOKIE_OPTIONS)
+                    if st.session_state.get(p3k, "없음") not in dealer_opts:
+                        st.session_state[p3k] = "없음"
+                    dealer_cookie = selectbox_with_left_icon(
+                        label="파티(딜러)",
+                        options=dealer_opts,
+                        key=p3k,
+                        icon_path=(
+                            _icon_for_cookie(st.session_state.get(p3k, ""), COOKIE_ELEMENT)
+                            if st.session_state.get(p3k, "") not in ("", "없음")
+                            else _icon_for_role("데미지 딜러")
+                        ),
+                    )
+
+                    dealer_cookie2 = "없음"
+                    if dealer_slot_count >= 2:
+                        dealer_opts2 = ["없음"] + [
+                            name for name in DPS_COOKIE_OPTIONS
+                            if name != dealer_cookie
+                        ]
+                        if st.session_state.get(p4k, "없음") not in dealer_opts2:
+                            st.session_state[p4k] = "없음"
+                        dealer_cookie2 = selectbox_with_left_icon(
+                            label="파티(딜러2)",
+                            options=dealer_opts2,
+                            key=p4k,
+                            icon_path=(
+                                _icon_for_cookie(st.session_state.get(p4k, ""), COOKIE_ELEMENT)
+                                if st.session_state.get(p4k, "") not in ("", "없음")
+                                else _icon_for_role("데미지 딜러")
+                            ),
+                        )
+                    else:
+                        # 딜러 메인에서는 두 번째 추가 딜러 슬롯을 사용하지 않는다.
+                        st.session_state[p4k] = "없음"
+
+                current_party = [
+                    name for name in list(st.session_state.get("party") or [])
+                    if name and name != "없음" and name != cookie and str(getattr(sim, "COOKIE_ROLE", {}).get(name, "")).lower() != "dps"
+                ]
+                if dealer_cookie != "없음":
+                    current_party.append(dealer_cookie)
+                if dealer_cookie2 != "없음" and dealer_cookie2 not in current_party:
+                    current_party.append(dealer_cookie2)
+                st.session_state.party = current_party
 
             with detail_tab:
                 with st.container(key="detail_tab_body"):
@@ -1553,10 +1704,16 @@ with st.container(key="outer_shell", border=False):
 
                     pe1k = party_equip1_key(k)
                     pe2k = party_equip2_key(k)
+                    pe3k = party_equip3_key(k)
+                    pe4k = party_equip4_key(k)
                     ps1k = party_seaz1_key(k)
                     ps2k = party_seaz2_key(k)
+                    ps3k = party_seaz3_key(k)
+                    ps4k = party_seaz4_key(k)
                     pu1k = party_unique1_key(k)
                     pu2k = party_unique2_key(k)
+                    pu3k = party_unique3_key(k)
+                    pu4k = party_unique4_key(k)
                     party_sets_map = {}
                     party_seaz_map = {}
                     party_uniques_map = {}
@@ -1565,7 +1722,7 @@ with st.container(key="outer_shell", border=False):
                         _adjustment_note_keys_for_main_cookie(cookie),
                         _adjustment_note_keys_for_equip(st.session_state.get(ek, ""), owner_cookie_name=cookie, main_cookie_name=cookie),
                         _adjustment_note_keys_for_seaz(st.session_state.get(sk, ""), owner_cookie_name=cookie),
-                        _adjustment_note_keys_for_party([st.session_state.get(p1k, ""), st.session_state.get(p2k, "")]),
+                        _adjustment_note_keys_for_party([st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")]),
                     )
 
                     def _render_party_detail(
@@ -1582,25 +1739,50 @@ with st.container(key="outer_shell", border=False):
                         st.markdown(f'<div class="ctl-label">{safe_cookie}</div>', unsafe_allow_html=True)
 
                         # 1) 장비
+                        has_moonlight_support = (
+                            cookie == "달빛술사 쿠키"
+                            or "달빛술사 쿠키" in (st.session_state.get("party") or [])
+                        )
                         equip_options, equip_preferred = _party_equip_options_for_cookie(
                             party_cookie_name,
                             # 속성 비교에는 내부 kind 값이 아니라 실제 쿠키 이름을 넘긴다.
                             main_cookie_name=cookie,
                             role_label=role_label,
+                            has_moonlight_support=has_moonlight_support,
                         )
                         picked_equip = ""
                         if equip_options:
                             equip_prev_key = f"{equip_widget_key}__cookie_prev"
                             equip_main_prev_key = f"{equip_widget_key}__main_prev"
+                            equip_moonlight_prev_key = f"{equip_widget_key}__moonlight_support_prev"
                             equip_cookie_changed = st.session_state.get(equip_prev_key, "") != party_cookie_name
                             equip_main_changed = st.session_state.get(equip_main_prev_key, "") != cookie
+                            prev_moonlight_context = st.session_state.get(equip_moonlight_prev_key, "__unset__")
+                            moonlight_context_changed = (
+                                "딜러" in role_label
+                                and prev_moonlight_context != has_moonlight_support
+                            )
                             cur_equip = st.session_state.get(equip_widget_key, "")
-                            # 기본 장비는 메인/파티 쿠키가 바뀐 순간에만 자동 보정
+                            # 서폿 변경으로 기본 장비가 바뀔 때는, 이전 기본값을 그대로 쓰고 있던 경우에만
+                            # 새 기본값으로 전환한다. 사용자가 직접 다른 장비를 고른 값은 유지한다.
+                            dealer_default_context_should_reset = False
+                            if moonlight_context_changed:
+                                if prev_moonlight_context == "__unset__":
+                                    dealer_default_context_should_reset = True
+                                else:
+                                    previous_default = (
+                                        "시간관리국의 제복"
+                                        if bool(prev_moonlight_context)
+                                        else "달콤한 설탕 깃털"
+                                    )
+                                    dealer_default_context_should_reset = cur_equip == previous_default
+                            # 기본 장비는 메인/파티 쿠키가 바뀌거나 딜러 기본 조건이 바뀐 순간에만 자동 보정
                             # 사용자가 세부사항에서 직접 고른 장비는 이후 rerun에서 유지
                             preferred_equip = equip_preferred if equip_preferred in equip_options else equip_options[0]
                             should_reset_equip = (
                                 equip_cookie_changed
                                 or equip_main_changed
+                                or dealer_default_context_should_reset
                                 or (not cur_equip)
                                 or (cur_equip not in equip_options)
                                 or (
@@ -1613,6 +1795,7 @@ with st.container(key="outer_shell", border=False):
                                 st.session_state[equip_widget_key] = preferred_equip
                             st.session_state[equip_prev_key] = party_cookie_name
                             st.session_state[equip_main_prev_key] = cookie
+                            st.session_state[equip_moonlight_prev_key] = has_moonlight_support
 
                             picked_equip = selectbox_with_left_icon(
                                 label=f"{role_label} 장비",
@@ -1672,7 +1855,7 @@ with st.container(key="outer_shell", border=False):
 
                         return picked_equip, picked_seaz, picked_unique
 
-                    if cookie in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키"):
+                    if cookie in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키", "스테인드누가맛 쿠키"):
                         support_cookie = st.session_state.get(p1k, "")
                         picked_equip, picked_seaz, picked_unique = _render_party_detail("파티(서폿)", support_cookie, pe1k, ps1k, pu1k)
                         if support_cookie and picked_equip:
@@ -1712,6 +1895,30 @@ with st.container(key="outer_shell", border=False):
 
                     else:
                         st.caption(_tr_text("세부 설정이 없습니다."))
+
+                    dealer_cookie = st.session_state.get(p3k, "")
+                    if dealer_cookie and dealer_cookie != "없음":
+                        picked_dealer_equip, picked_dealer_seaz, picked_dealer_unique = _render_party_detail(
+                            "파티(딜러)", dealer_cookie, pe3k, ps3k, pu3k
+                        )
+                        if picked_dealer_equip:
+                            party_sets_map[dealer_cookie] = picked_dealer_equip
+                        if picked_dealer_seaz:
+                            party_seaz_map[dealer_cookie] = picked_dealer_seaz
+                        if picked_dealer_unique:
+                            party_uniques_map[dealer_cookie] = picked_dealer_unique
+
+                    dealer_cookie2 = st.session_state.get(p4k, "")
+                    if dealer_cookie2 and dealer_cookie2 != "없음":
+                        picked_dealer2_equip, picked_dealer2_seaz, picked_dealer2_unique = _render_party_detail(
+                            "파티(딜러)", dealer_cookie2, pe4k, ps4k, pu4k
+                        )
+                        if picked_dealer2_equip:
+                            party_sets_map[dealer_cookie2] = picked_dealer2_equip
+                        if picked_dealer2_seaz:
+                            party_seaz_map[dealer_cookie2] = picked_dealer2_seaz
+                        if picked_dealer2_unique:
+                            party_uniques_map[dealer_cookie2] = picked_dealer2_unique
 
                     render_adjustment_summary(detail_note_keys)
 
@@ -1794,8 +2001,10 @@ with st.container(key="outer_shell", border=False):
                 progress_slot.markdown(_progress_html(0), unsafe_allow_html=True)
 
                 def cb(p: float):
+                    # 메인 쿠키 최적화는 전체 진행률의 80%까지 사용하고,
+                    # 남은 20%에서 파티 쿠키 딜 기여도를 계산한다.
                     p = max(0.0, min(1.0, float(p)))
-                    progress_slot.markdown(_progress_html(int(p * 100)), unsafe_allow_html=True)
+                    progress_slot.markdown(_progress_html(int(p * 80)), unsafe_allow_html=True)
 
                 best = None
                 best_kind = None
@@ -1980,6 +2189,24 @@ with st.container(key="outer_shell", border=False):
                     )
                     best_kind = "milky"
 
+                elif kind_cookie == "nougat":
+                    fn = getattr(sim, "optimize_stained_nougat_cycle", None)
+                    if fn is None:
+                        raise ValueError("sim.optimize_stained_nougat_cycle 가 없습니다.")
+                    best = fn(
+                        seaz_name=st.session_state.seaz,
+                        party=st.session_state.party,
+                        party_sets=st.session_state.get("party_sets", {}),
+                        party_seaz=st.session_state.get("party_seaz", {}),
+                        party_uniques=st.session_state.get("party_uniques", {}),
+                        step=1,
+                        progress_cb=cb,
+                        equip_override=equip_override_local,
+                        unique_override=unique_override_local,
+                        potential_override=potential_override_local,
+                    )
+                    best_kind = "nougat"
+
                 elif kind_cookie == "cherry":
                     fn = getattr(sim, "optimize_cherry_cola_cycle", None)
                     if fn is None:
@@ -2098,6 +2325,20 @@ with st.container(key="outer_shell", border=False):
                     # 달술 잠재는 유니크/장비/시즈 선택에 따라 최적화 함수에서 자동 배분한다.
                     best["potentials"] = dict(best.get("potentials") or {})
 
+                if isinstance(best, dict):
+                    def party_contribution_cb(p: float):
+                        p = max(0.0, min(1.0, float(p)))
+                        progress_slot.markdown(
+                            _progress_html(80 + int(p * 20)),
+                            unsafe_allow_html=True,
+                        )
+
+                    best["party_damage_contribution"] = sim.calculate_party_damage_contributions(
+                        best,
+                        support_step=SUPPORT_STEP_FIXED,
+                        progress_cb=party_contribution_cb,
+                    )
+
                 progress_slot.markdown(_progress_html(100), unsafe_allow_html=True)
                 return best, best_kind
 
@@ -2123,7 +2364,7 @@ with st.container(key="outer_shell", border=False):
             if not best:
                 st.caption(_tr_text("설정 후 실행하면 결과가 표시됩니다."))
             else:
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "moonlight", "milky", "stardust", "jackfruit"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "moonlight", "milky", "stardust", "jackfruit", "nougat"):
                     c1, c2, c3 = st.columns(3, gap="small")
                     c1.metric("DPS", f"{best.get('dps', 0):,.4f}")
                     c2.metric(_tr_text("1사이클 시간(s)"), f"{best.get('cycle_total_time', 0):,.4f}")
@@ -2172,7 +2413,7 @@ with st.container(key="outer_shell", border=False):
 
                 sugar_target_text = _current_sugar_set_text()
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit", "nougat"):
                     tab1, tab2, tab3, tab4 = st.tabs([_tr_text("결과"), _tr_text("최종 스탯"), _tr_text("사이클 기여도"), ("Shard Placement" if (_english_on() or st.session_state.get("ui_language_widget") == "English") else "조각 배치")])
                 else:
                     tab1, tab2, tab3, tab4 = st.tabs([_tr_text("결과"), _tr_text("최종 스탯"), _tr_text("사이클 기여도"), ("Shard Placement" if (_english_on() or st.session_state.get("ui_language_widget") == "English") else "조각 배치")])
@@ -2190,7 +2431,7 @@ with st.container(key="outer_shell", border=False):
                                 rows.append({"항목": k, "값": v})
 
                         rows = []
-                        if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
+                        if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "neon", "moonlight", "milky", "stardust", "jackfruit", "nougat"):
                             add(rows, "쿠키", best.get("cookie", ""))
                             add(rows, "장비", best.get("equip", ""))
                             add(rows, "시즈나이트", best.get("seaz", ""))
@@ -2220,7 +2461,7 @@ with st.container(key="outer_shell", border=False):
 
                     setting_df = make_setting_df(best, kind)
 
-                    if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "moonlight", "milky", "stardust", "jackfruit"):
+                    if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "char", "moonlight", "milky", "stardust", "jackfruit", "nougat"):
                         p_df = pretty_potentials(best.get("potentials", {}))
                         s_df = pretty_shards(best.get("shards", {}))
                     elif kind in ("isle", "neon"):
@@ -2241,7 +2482,7 @@ with st.container(key="outer_shell", border=False):
                     """
                     st.markdown(html, unsafe_allow_html=True)
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit", "nougat"):
                     with tab2:
                         stats = best.get("stats", {})
                         if not stats:
@@ -2254,7 +2495,7 @@ with st.container(key="outer_shell", border=False):
                             )
                             render_final_stats_grid(atk_df, crit_df, common_df, skill_df, surv_df, amp_df)
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit", "nougat"):
                     with tab3:
                         cb = best.get("cycle_breakdown", {})
                         df = cycle_breakdown_df(cb)
@@ -2268,7 +2509,19 @@ with st.container(key="outer_shell", border=False):
                             col_widths=(1, 1, 1),
                         )
 
-                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit"):
+                        party_summary = best.get("party_damage_contribution", {}) or {}
+                        party_df = party_damage_contribution_df(party_summary)
+                        render_labeled_table(
+                            "파티 쿠키 딜 기여도",
+                            party_df,
+                            small=False,
+                            col_widths=(1, 1, 1),
+                        )
+
+                        if party_summary.get("errors"):
+                            st.caption(_tr_text("일부 파티 쿠키의 딜 기여도를 계산하지 못했습니다."))
+
+                if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit", "nougat"):
                     with tab4:
                         render_shard_placement_tab(sugar_target_text, english=(_english_on() or st.session_state.get("ui_language_widget") == "English"), theme_mode=st.session_state.get("ui_theme", "system"), glass_shards=best.get("shards", {}), cookie_name=(best.get("cookie", "") or st.session_state.get("cookie", "")))
 

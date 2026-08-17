@@ -2368,6 +2368,10 @@ body.cs-theme-dark #clear-pieces-btn:hover {
 #recognized-piece-palette > .cs-empty-result {
     background: #f6f7f9 !important;
     background-color: #f6f7f9 !important;
+    border-radius: 6px !important;
+}
+#recognized-piece-palette {
+    overflow: hidden !important;
 }
 body.cs-theme-dark .cs-result-card .cs-empty-result,
 body.cs-theme-dark #recognized-piece-palette,

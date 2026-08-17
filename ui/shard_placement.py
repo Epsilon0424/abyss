@@ -4945,6 +4945,8 @@ body.cs-theme-dark .cs-stat-edit-menu::-webkit-scrollbar-track {{
     padding-right: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
 }}
 #recognized-piece-palette > .cs-empty-result {{
@@ -4952,6 +4954,7 @@ body.cs-theme-dark .cs-stat-edit-menu::-webkit-scrollbar-track {{
     max-width: none !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
+    border-radius: 6px !important;
     box-sizing: border-box !important;
 }}
 

@@ -1427,7 +1427,7 @@ textarea,
 .cs-target {{
     margin: 8px 0 8px 0;
     padding: 9px 12px;
-    border-radius: 12px;
+    border-radius: 10px;
     background: #fff7f7;
     border: none !important;
     color: #374151;
@@ -5097,7 +5097,7 @@ body.cs-theme-dark:not(#cs-scroll-color-a):not(#cs-scroll-color-b) *:not(#cs-scr
     margin-top: 0px !important;
     padding: 10px !important;
     border: 0 !important;
-    border-radius: 12px !important;
+    border-radius: 10px !important;
     background: #f6f7f9 !important;
 }}
 .cs-upload-head {{

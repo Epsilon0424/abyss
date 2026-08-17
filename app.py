@@ -1,5 +1,5 @@
 # =====================================================
-# Imports
+# 가져오기
 # =====================================================
 import html as _html
 from datetime import datetime
@@ -69,7 +69,7 @@ from ui.result_helpers import (
 )
 
 # =====================================================
-# UI module imports
+# 화면 모듈
 # =====================================================
 from ui.styles import inject_styles
 from ui.translations import (
@@ -103,13 +103,13 @@ from ui.adjustment_notes import (
 from ui.shard_placement import render_shard_placement_tab
 
 # =====================================================
-# Page setup and base style
+# 페이지 설정 및 기본 스타일
 # =====================================================
 st.set_page_config(page_title="THE ABYSS RAID COOKIE LAB", layout="wide")
 
-# UI 테마 선택값
-# - system: 기기/브라우저 색상 설정을 따름
-# - light/dark: 사용자가 앱에서 직접 고정
+# 화면 테마 선택값
+# - 기기 설정: 브라우저 색상 설정 연동
+# - 라이트·다크: 사용자 고정
 THEME_OPTIONS = ("system", "light", "dark")
 if st.session_state.get("ui_theme") not in THEME_OPTIONS:
     st.session_state.ui_theme = "system"
@@ -139,7 +139,7 @@ inject_styles()
 init_session_state()
 
 # =====================================================
-# Main-cookie potential controls
+# 메인 쿠키 잠재력 설정
 # =====================================================
 POTENTIAL_SETTING_ORDER = (
     "elem_atk",
@@ -169,7 +169,6 @@ def _coerce_potential_slot_value(stat_key: str, raw_value) -> int:
         value = 0
     return max(0, min(cap, value))
 
-
 def _normalize_potential_config(raw) -> dict[str, int]:
     raw = raw or {}
     return {
@@ -178,8 +177,8 @@ def _normalize_potential_config(raw) -> dict[str, int]:
     }
 
 def _default_manual_potential(cookie_name: str, selected_equip: str = "") -> dict[str, int]:
-    # 수동 설정은 자동 최적화 결과/쿠키별 고정값을 시작값으로 가져오지 않는다.
-    # 사용자가 처음 수동으로 전환했을 때 모든 항목이 0에서 시작하도록 한다.
+    # 수동 잠재력 최초값: 자동 최적화·고정값 제외
+    # 사용자가 처음 수동으로 전환했을 때 모든 항목이 0에서 시작
     return _normalize_potential_config({})
 
 def _invalidate_result_for_potential_change() -> None:
@@ -188,17 +187,15 @@ def _invalidate_result_for_potential_change() -> None:
     st.session_state.last_run = None
 
 def _potential_saved_key(kind: str) -> str:
-    # 다이얼로그 안 number_input 위젯은 다이얼로그가 닫히면 Streamlit 위젯 수명주기에 따라
-    # session_state에서 정리될 수 있다. 실제 계산에 쓰는 값은 위젯 key와 분리해 영구 보관한다.
+    # 잠재력 확정값: 편집 위젯 키와 분리 보관
     return f"potential_saved__{kind}"
 
 def _potential_editor_value_key(kind: str, stat_key: str) -> str:
-    # 팝업이 열려 있는 동안에만 쓰는 편집용 위젯 key.
+    # 잠재력 편집용 위젯 키
     return f"potential_editor__{kind}__{stat_key}"
 
 def _potential_user_saved_key(kind: str) -> str:
-    # 사용자가 팝업에서 '완료'를 눌러 확정한 수동값인지 구분한다.
-    # 이전 버전에서 자동값이 수동 시작값으로 저장돼 있던 세션도 0으로 한 번 초기화할 수 있다.
+    # 사용자 확정 수동값 상태
     return f"potential_user_saved__{kind}"
 
 def _ensure_potential_state(cookie_name: str, kind: str, selected_equip: str = "") -> None:
@@ -210,13 +207,13 @@ def _ensure_potential_state(cookie_name: str, kind: str, selected_equip: str = "
     user_saved_key = _potential_user_saved_key(kind)
 
     if user_saved_key not in st.session_state:
-        # 구버전에서 자동 최적화/쿠키 고정값이 수동 시작값으로 들어가 있던 상태를 제거한다.
+        # 구버전 수동 시작값 초기화
         st.session_state[user_saved_key] = False
         st.session_state[saved_key] = _default_manual_potential(cookie_name, selected_equip)
     elif saved_key not in st.session_state:
         st.session_state[saved_key] = _default_manual_potential(cookie_name, selected_equip)
     else:
-        # 사용자가 이미 확정한 값은 rerun/자동↔수동 전환 뒤에도 유지한다.
+        # 확정 수동값 유지
         st.session_state[saved_key] = _normalize_potential_config(st.session_state.get(saved_key))
 
 def _manual_potential_from_state(kind: str) -> dict[str, int] | None:
@@ -224,44 +221,20 @@ def _manual_potential_from_state(kind: str) -> dict[str, int] | None:
         return None
     return _normalize_potential_config(st.session_state.get(_potential_saved_key(kind)))
 
-def _prepare_potential_dialog(kind: str) -> None:
-    # 이전 팝업 방식 호환용. 현재는 세부사항 탭 인라인 편집을 사용한다.
-    saved = _normalize_potential_config(st.session_state.get(_potential_saved_key(kind)))
-    for stat_key in POTENTIAL_SETTING_ORDER:
-        st.session_state[_potential_editor_value_key(kind, stat_key)] = str(int(saved.get(stat_key, 0)))
-
-
 def _on_potential_mode_change(kind: str) -> None:
-    # 자동/수동 전환 시 기존 계산 결과를 무효화하고,
-    # 수동으로 전환하면 마지막 수동값을 숫자 입력칸에 복사한다.
+    # 자동·수동 전환 결과 초기화 및 수동값 복원
     _invalidate_result_for_potential_change()
     if bool(st.session_state.get(potential_manual_key(kind), False)):
         saved = _normalize_potential_config(st.session_state.get(_potential_saved_key(kind)))
         for stat_key in POTENTIAL_SETTING_ORDER:
             st.session_state[_potential_editor_value_key(kind, stat_key)] = str(int(saved.get(stat_key, 0)))
 
-
-def _potential_summary_text(kind: str) -> str:
-    pot = _manual_potential_from_state(kind) or {}
-    labels = getattr(sim, "POTENTIAL_KR", {})
-    parts = []
-    for stat_key in POTENTIAL_SETTING_ORDER:
-        count = int(pot.get(stat_key, 0) or 0)
-        if count > 0:
-            parts.append(f"{_tr_text(labels.get(stat_key, stat_key))} {count}")
-    return " · ".join(parts) if parts else _tr_text("설정값 없음")
-
-
 def _sanitize_potential_editor_value(kind: str, stat_key: str) -> None:
     editor_key = _potential_editor_value_key(kind, stat_key)
     st.session_state[editor_key] = str(_coerce_potential_slot_value(stat_key, st.session_state.get(editor_key, 0)))
 
-
 def _render_potential_stepper(kind: str, stat_key: str) -> None:
-    """잠재력 한 항목을 인라인 2열용 숫자 입력으로 렌더링한다.
-
-    +/- 버튼은 제거하고 숫자 입력만 남긴다.
-    """
+    """잠재력 숫자 입력"""
     label = _tr_text(getattr(sim, "POTENTIAL_KR", {}).get(stat_key, stat_key))
     editor_key = _potential_editor_value_key(kind, stat_key)
     icon_src = _icon_data_uri(_icon_for_potential_stat(stat_key), 18)
@@ -283,9 +256,8 @@ def _render_potential_stepper(kind: str, stat_key: str) -> None:
             args=(kind, stat_key),
         )
 
-
 def _ensure_inline_potential_editor(kind: str) -> None:
-    """세부사항 탭의 수동 잠재력 입력값을 확정 저장값과 동기화한다."""
+    """수동 잠재력 입력값 동기화"""
     saved = _normalize_potential_config(st.session_state.get(_potential_saved_key(kind)))
     for stat_key in POTENTIAL_SETTING_ORDER:
         editor_key = _potential_editor_value_key(kind, stat_key)
@@ -294,9 +266,8 @@ def _ensure_inline_potential_editor(kind: str) -> None:
         else:
             st.session_state[editor_key] = str(_coerce_potential_slot_value(stat_key, st.session_state.get(editor_key, 0)))
 
-
 def _sync_inline_potential(kind: str) -> tuple[dict[str, int], int]:
-    """현재 인라인 입력값을 즉시 수동 잠재력 확정값으로 저장한다."""
+    """수동 잠재력 저장값 동기화"""
     editing = _normalize_potential_config({
         stat_key: st.session_state.get(_potential_editor_value_key(kind, stat_key), 0)
         for stat_key in POTENTIAL_SETTING_ORDER
@@ -310,14 +281,12 @@ def _sync_inline_potential(kind: str) -> tuple[dict[str, int], int]:
     used = sum(int(v) for v in editing.values())
     return editing, used
 
-
 def _render_inline_potential_editor(kind: str) -> int:
-    """수동 잠재력을 세부사항 탭 안에 2열 고정으로 표시한다."""
+    """수동 잠재력 2열 배치"""
     _ensure_inline_potential_editor(kind)
     with st.container(key=f"potential_inline_body_{kind}", border=False):
-        # 앞 3행은 잠재력 스탯 2개씩 배치한다.
-        # Streamlit 컨테이너 margin은 내부 wrapper에 의해 상쇄될 수 있어서,
-        # 2행부터는 실제 높이를 가진 spacer를 넣어 행 간격을 확실하게 만든다.
+        # 앞 3행은 잠재력 스탯 2개씩 배치
+        # 잠재력 행 간격 보정
         for row_index, row_start in enumerate((0, 2, 4)):
             if row_index > 0:
                 st.markdown('<div class="potential-row-spacer"></div>', unsafe_allow_html=True)
@@ -332,7 +301,7 @@ def _render_inline_potential_editor(kind: str) -> int:
                     with row_cols[offset]:
                         _render_potential_stepper(kind, stat_key)
 
-        # 마지막 행은 디버프 증폭 + 잠재력 사용량을 한 줄에 배치해 빈 공간을 없앤다.
+        # 디버프 증폭·잠재력 사용량 동일 행 배치
         st.markdown('<div class="potential-row-spacer"></div>', unsafe_allow_html=True)
         with st.container(key=f"potential_row__{kind}__3", border=False):
             row_cols = st.columns(2, gap="small")
@@ -352,14 +321,10 @@ def _render_inline_potential_editor(kind: str) -> int:
     return used
 
 # =====================================================
-# Selection restore and option helpers
+# 선택값 복구 및 옵션 보조
 # =====================================================
 def _restore_selection_widgets_for_language_toggle() -> None:
-    """언어 체크박스만 바꿨을 때 기존 선택값이 초기화되지 않도록 위젯 키를 복구한다.
-    Streamlit selectbox는 format_func로 표시 문자열이 바뀌면 같은 key라도 내부 위젯 상태가
-    기본값으로 돌아가는 경우가 있다. 그래서 언어 변경 직후에는 실제 계산에 쓰는 한국어
-    canonical 값들을 다시 각 selectbox key에 넣고 rerun한다.
-    """
+    """언어 전환 선택값 복구"""
     try:
         cur_cookie = st.session_state.get("cookie", "")
         cur_element = st.session_state.get("element", "")
@@ -391,8 +356,7 @@ def _restore_selection_widgets_for_language_toggle() -> None:
         if len(party) >= 2 and party[1]:
             st.session_state[party2_key(k)] = party[1]
 
-        # 추가 딜러 슬롯은 파티 배열의 위치가 메인 쿠키 역할에 따라 달라질 수 있으므로
-        # 역할을 기준으로 복구한다. 메인이 서포터/스트라이커면 딜러 2명을 유지한다.
+        # 추가 딜러 슬롯 역할 기준 복구
         dealer_cookies = [
             name
             for name in party
@@ -438,16 +402,11 @@ def _restore_selection_widgets_for_language_toggle() -> None:
             if dealer_cookie2 in party_uniques:
                 st.session_state[party_unique4_key(k)] = party_uniques[dealer_cookie2]
     except Exception:
-        # 언어 전환 보정이 실패해도 앱 자체는 계속 실행되도록 한다.
+        # 언어 전환 보정 실패 시 앱 실행 유지
         pass
 
 def _icon_for_party_unique(unique_name: str, party_cookie_name: str) -> str | None:
-    """유니크 설탕유리조각 드롭다운 좌측 아이콘.
-    - 공용 유니크 : 유형/ALL.png
-    - 데미지 딜러 유니크 3종 : 유형/데미지 딜러.png
-    - 스트라이커 유니크 2종 : 유형/스트라이커.png
-    - 서포터 유니크 3종 : 유형/서포터.png
-    """
+    """파티 유니크 조각 아이콘"""
     unique_name = str(unique_name).strip()
 
     meta = getattr(sim, "UNIQUE_SHARDS", {}).get(unique_name, {}) or {}
@@ -475,7 +434,7 @@ def _icon_for_party_unique(unique_name: str, party_cookie_name: str) -> str | No
     return _icon_for_role("ALL")
 
 def _party_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
-    # 메인 딜러 유니크는 쿠키 파일의 allowed_uniques()에서 1개로 고정
+    # 메인 딜러 유니크 1개 고정
     # 파티 쿠키 유니크는 세부 설정에서 직접 선택 가능하게 유지
     support_options = [
         "로드 나이트메어의 기억",
@@ -505,7 +464,7 @@ def _party_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     return [], ""
 
 def _main_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
-    """메인 쿠키 유니크 설탕유리조각 후보 / 기본값."""
+    """메인 쿠키 유니크 조각 후보"""
     # 메인 쿠키는 역할 기준으로 유니크 후보 표시
     # - 딜러: 딜러 유니크 3종 + 공용 유니크
     # - 스트라이커: 스트라이커 유니크 2종 + 공용 유니크
@@ -582,7 +541,7 @@ def _main_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     return clean, preferred
 
 def _render_main_unique_select(cookie_name: str, unique_widget_key: str) -> str:
-    """기본 탭에 표시되는 메인 쿠키 유니크 설탕유리조각 드롭다운."""
+    """메인 쿠키 유니크 조각 선택"""
     unique_options, unique_preferred = _main_unique_options_for_cookie(cookie_name)
     if not unique_options:
         st.session_state.main_unique = ""
@@ -614,12 +573,7 @@ def _party_equip_options_for_cookie(
     role_label: str = "",
     has_moonlight_support: bool = False,
 ) -> tuple[list[str], str]:
-    """파티 쿠키별 장비 후보 / 기본값.
-
-    메인 쿠키와 파티 쿠키의 속성이 다르면 기본 장비만 역할 기준으로 보정
-    - 서포터: 전설의 유령해적
-    - 스트라이커: 황금 예복
-    """
+    """파티 쿠키 장비 후보"""
     all_equips = list(getattr(sim, "EQUIP_SETS", {}).keys())
 
     def keep(names: list[str]) -> list[str]:
@@ -649,8 +603,8 @@ def _party_equip_options_for_cookie(
             opts = keep(["영원의 대마술사", "전설의 유령해적"])
             preferred = "영원의 대마술사"
     elif cookie_name == "체리콜라맛 쿠키":
-        # 체리콜라는 스트라이커 장비만 사용한다.
-        # 단, 최적화의 잠재/일반 설탕유리조각 후보는 딜러형으로 계산한다.
+        # 체리콜라는 스트라이커 장비만 사용
+        # 단, 최적화의 잠재/일반 설탕유리조각 후보는 딜러형으로 계산
         opts = keep(["황금 예복", "유성우의 향연"])
         preferred = "황금 예복"
     elif cookie_name == "스테인드누가맛 쿠키":
@@ -691,7 +645,7 @@ def _party_equip_options_for_cookie(
     elem_diff = bool(main_elem and party_elem and main_elem != party_elem)
 
     if elem_diff:
-        # 메인과 속성이 다르면 화면에 처음 보이는 기본값만 역할 기준으로 보정한다.
+        # 메인과 속성이 다르면 화면에 처음 보이는 기본값만 역할 기준으로 보정
         if ("스트" in role_label) or _is_striker_cookie(cookie_name):
             preferred = "황금 예복"
         elif (("서폿" in role_label) or _is_support_cookie(cookie_name)) and cookie_name != "달빛술사 쿠키":
@@ -702,7 +656,7 @@ def _party_equip_options_for_cookie(
     if preferred and preferred not in opts:
         opts = [preferred] + opts
 
-    # selectbox 첫 화면이 기본값을 바로 보여주도록 기본값을 맨 앞으로 정렬
+    # 선택 상자 첫 화면이 기본값을 바로 보여주도록 기본값을 맨 앞으로 정렬
     if preferred in opts:
         opts = [preferred] + [x for x in opts if x != preferred]
 
@@ -774,7 +728,7 @@ def _party_seaz_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     return opts, preferred
 
 # =====================================================
-# Main UI: title and layout
+# 메인 화면 제목 및 배치
 # =====================================================
 st.markdown(f"""
 <div class="title-card">
@@ -802,7 +756,7 @@ else:
         st.rerun()
 
 # =====================================================
-# Main UI: selection and result panels
+# 메인 화면 선택 및 결과
 # =====================================================
 with st.container(key="outer_shell", border=False):
     left_col, right_col = st.columns([0.75, 2.45], gap="small")
@@ -829,7 +783,6 @@ with st.container(key="outer_shell", border=False):
                     key="element_widget",
                     icon_path=_icon_for_element(_cur_el),
                 )
-
 
                 # 속성 변경 시: 해당 속성에 쿠키가 있으면 첫 쿠키로 이동 + 상태 초기화
                 # : 쿠키가 없으면(예: 빛/불) 현재 쿠키는 유지하고 안내만 표시
@@ -884,10 +837,10 @@ with st.container(key="outer_shell", border=False):
                 else:
                     cookie_options = [c for c in all_cookies if COOKIE_ELEMENT.get(c) == st.session_state.element]
 
-                # 속성에 쿠키가 없는 경우(예: 빛/불): 안내만 표시 + 쿠키 드롭다운 숨김(현재 쿠키 유지)
+                # 속성 내 쿠키 없음 처리
                 if (st.session_state.element != "전체") and (not cookie_options):
                     st.info(_tr_text("선택하신 속성의 쿠키가 없습니다."))
-                    cookie = st.session_state.cookie  # 아래 로직에서 cookie 변수가 필요하니 현재 쿠키로 유지
+                    cookie = st.session_state.cookie  # 현재 쿠키 변수 참조 유지
                 else:
                     if "cookie_widget" not in st.session_state:
                         st.session_state.cookie_widget = st.session_state.cookie
@@ -922,8 +875,8 @@ with st.container(key="outer_shell", border=False):
                     k2 = kind_of(cookie)
                     st.session_state[seaz_key(k2)] = ""
 
-                    # 쿠키 종류별 기본 파티 슬롯을 다시 맞춘다.
-                    # 기존 역할 슬롯을 기본값으로 되돌리고, 추가 딜러 슬롯은 선택 안 함으로 초기화한다.
+                    # 쿠키 종류별 기본 파티 슬롯을 다시 보정
+                    # 기존 역할 슬롯을 기본값으로 되돌리고, 추가 딜러 슬롯은 선택 안 함으로 초기화
                     reset_party_defaults_for_kind(k2)
 
                     st.session_state[mode_key(k2)] = "최적(자동)"
@@ -1029,9 +982,7 @@ with st.container(key="outer_shell", border=False):
                 # =====================================================
                 render_seaz_label_with_adjustment(st.session_state.get(sk, ""))
 
-                # -------------------------
                 # 1) 윈드(스트)
-                # -------------------------
                 if cookie == "윈드파라거스 쿠키":
                     seaz_options = (getattr(sim, "wind_allowed_seaz", lambda: [""])() or [""])
                     seaz_options = hide_breeder_when_not_wind(cookie, seaz_options) or [""]
@@ -1116,9 +1067,7 @@ with st.container(key="outer_shell", border=False):
                     )
                     st.session_state.party = [sup]
 
-                # -------------------------
                 # 2) 멜랑/흑보리(딜러)
-                # -------------------------
                 elif cookie == "멜랑크림 쿠키":
                     seaz_options = [x for x in getattr(sim, "SEAZNITES", {}).keys() if str(x).startswith("바닐라몬드:")]
                     seaz_options = hide_breeder_when_not_wind(cookie, seaz_options) or [""]
@@ -1343,7 +1292,7 @@ with st.container(key="outer_shell", border=False):
                             icon_path=_icon_for_cookie(st.session_state.get(p1k, support_opts[0] if support_opts else ""), COOKIE_ELEMENT),
                         )
 
-                        # 체리콜라는 스트라이커라 메인으로 볼 때는 파티에 스트라이커를 추가로 띄우지 않는다.
+                        # 체리콜라 메인: 추가 스트라이커 제외
                         st.session_state[p2k] = ""
                         st.session_state.party = [sup]
 
@@ -1421,7 +1370,7 @@ with st.container(key="outer_shell", border=False):
 
                     support_opts = SUPPORT_COOKIE_OPTIONS
                     init_once(p1k, DEFAULT_PARTY_SLOT1_BY_KIND["blue"])
-                    # 블루멜로우 기본 파티 서포터는 샬롯이지만, 사용자가 직접 고른 서포터는 유지한다.
+                    # 블루멜로우 사용자 서포터 선택 유지
                     if st.session_state.get(p1k, support_opts[0]) not in support_opts:
                         st.session_state[p1k] = DEFAULT_PARTY_SLOT1_BY_KIND["blue"] if DEFAULT_PARTY_SLOT1_BY_KIND["blue"] in support_opts else support_opts[0]
                     sup = selectbox_with_left_icon(
@@ -1444,9 +1393,7 @@ with st.container(key="outer_shell", border=False):
 
                     st.session_state.party = [sup, strike]
 
-                # -------------------------
                 # 3) 이슬(서폿) / 샬롯(서폿)
-                # -------------------------
                 elif cookie == "이슬맛 쿠키":
                     preferred_seaz = getattr(sim, "FIXED_SEAZ_ISLE", "허브그린드:번뜩이는 기지")
                     all_opts = list(getattr(sim, "SEAZNITES", {}).keys())
@@ -1504,7 +1451,7 @@ with st.container(key="outer_shell", border=False):
 
                     # 3) 혹시 비면(데이터 없을 때) 기본값 후보를 만들어 둠
                     if not seaz_options:
-                        # 기존 기본 대체값(FIXED_SEAZ_ISLE) 자동 노출 문제 방지
+                        # 기본 대체 시즈 자동 노출 방지
                         fallback = PREFERRED_SEAZ_CHAR
                         seaz_options = [fallback]
 
@@ -1616,8 +1563,8 @@ with st.container(key="outer_shell", border=False):
                 else:
                     raise ValueError(f"지원하지 않는 쿠키: {cookie}")
 
-                # 딜러 슬롯은 역할 파티 바로 아래에 이어 붙여서 한 그룹처럼 보이게 한다.
-                # 메인이 딜러면 추가 딜러 1명, 메인이 서포터/스트라이커면 딜러 2명을 선택한다.
+                # 추가 딜러 슬롯: 역할 파티 바로 아래 배치
+                # 메인이 딜러면 추가 딜러 1명, 메인이 서포터/스트라이커면 딜러 2명을 선택
                 main_role = str(getattr(sim, "COOKIE_ROLE", {}).get(cookie, "")).lower()
                 dealer_slot_count = 1 if main_role == "dps" else 2
 
@@ -1638,10 +1585,7 @@ with st.container(key="outer_shell", border=False):
 
                     dealer_cookie2 = "없음"
                     if dealer_slot_count >= 2:
-                        dealer_opts2 = ["없음"] + [
-                            name for name in DPS_COOKIE_OPTIONS
-                            if name != dealer_cookie
-                        ]
+                        dealer_opts2 = ["없음"] + list(DPS_COOKIE_OPTIONS)
                         if st.session_state.get(p4k, "없음") not in dealer_opts2:
                             st.session_state[p4k] = "없음"
                         dealer_cookie2 = selectbox_with_left_icon(
@@ -1655,7 +1599,7 @@ with st.container(key="outer_shell", border=False):
                             ),
                         )
                     else:
-                        # 딜러 메인에서는 두 번째 추가 딜러 슬롯을 사용하지 않는다.
+                        # 딜러 메인: 두 번째 추가 딜러 슬롯 제외
                         st.session_state[p4k] = "없음"
 
                 current_party = [
@@ -1664,7 +1608,7 @@ with st.container(key="outer_shell", border=False):
                 ]
                 if dealer_cookie != "없음":
                     current_party.append(dealer_cookie)
-                if dealer_cookie2 != "없음" and dealer_cookie2 not in current_party:
+                if dealer_cookie2 != "없음":
                     current_party.append(dealer_cookie2)
                 st.session_state.party = current_party
 
@@ -1683,7 +1627,7 @@ with st.container(key="outer_shell", border=False):
                             unsafe_allow_html=True,
                         )
                         # 잠재력 자동/수동 선택 앞 아이콘 테스트:
-                        # 장비 폴더의 `자동.png`를 두 상태 모두 공통으로 사용한다.
+                        # 자동 장비 아이콘 공통 사용
                         selectbox_with_left_icon(
                             label=_tr_text("잠재력 설정 방식"),
                             options=[False, True],
@@ -1695,8 +1639,8 @@ with st.container(key="outer_shell", border=False):
                         )
 
                         if bool(st.session_state.get(_potential_manual_key, False)):
-                            # 팝업 대신 세부사항 탭 안에서 바로 편집한다.
-                            # 좁은 화면에서도 한 줄에 잠재력 2개를 유지한다.
+                            # 팝업 대신 세부사항 탭 안에서 바로 편집
+                            # 좁은 화면에서도 한 줄에 잠재력 2개를 유지
                             _potential_used = _render_inline_potential_editor(k)
                             manual_potential_invalid = (_potential_used != POTENTIAL_TOTAL_SLOTS)
                         else:
@@ -1745,7 +1689,7 @@ with st.container(key="outer_shell", border=False):
                         )
                         equip_options, equip_preferred = _party_equip_options_for_cookie(
                             party_cookie_name,
-                            # 속성 비교에는 내부 kind 값이 아니라 실제 쿠키 이름을 넘긴다.
+                            # 실제 쿠키 이름 기준 속성 비교
                             main_cookie_name=cookie,
                             role_label=role_label,
                             has_moonlight_support=has_moonlight_support,
@@ -1763,8 +1707,7 @@ with st.container(key="outer_shell", border=False):
                                 and prev_moonlight_context != has_moonlight_support
                             )
                             cur_equip = st.session_state.get(equip_widget_key, "")
-                            # 서폿 변경으로 기본 장비가 바뀔 때는, 이전 기본값을 그대로 쓰고 있던 경우에만
-                            # 새 기본값으로 전환한다. 사용자가 직접 다른 장비를 고른 값은 유지한다.
+                            # 서포터 변경 시 기본 장비 동기화
                             dealer_default_context_should_reset = False
                             if moonlight_context_changed:
                                 if prev_moonlight_context == "__unset__":
@@ -1776,8 +1719,8 @@ with st.container(key="outer_shell", border=False):
                                         else "달콤한 설탕 깃털"
                                     )
                                     dealer_default_context_should_reset = cur_equip == previous_default
-                            # 기본 장비는 메인/파티 쿠키가 바뀌거나 딜러 기본 조건이 바뀐 순간에만 자동 보정
-                            # 사용자가 세부사항에서 직접 고른 장비는 이후 rerun에서 유지
+                            # 메인·파티 변경 시 기본 장비 자동 보정
+                            # 사용자가 세부사항에서 직접 고른 장비는 이후 재실행에서 유지
                             preferred_equip = equip_preferred if equip_preferred in equip_options else equip_options[0]
                             should_reset_equip = (
                                 equip_cookie_changed
@@ -1812,8 +1755,8 @@ with st.container(key="outer_shell", border=False):
                             seaz_prev_key = f"{seaz_widget_key}__cookie_prev"
                             seaz_cookie_changed = st.session_state.get(seaz_prev_key, "") != party_cookie_name
                             cur_seaz = st.session_state.get(seaz_widget_key, "")
-                            # 쿠키가 바뀌었거나 현재 값이 선택지에 없을 때만 기본값으로 보정한다.
-                            # 사용자가 세부사항에서 직접 선택한 시즈나이트(예: 백마법사의 의지)는 유지한다.
+                            # 쿠키가 바뀌었거나 현재 값이 선택지에 없을 때만 기본값으로 보정
+                            # 사용자가 세부사항에서 직접 선택한 시즈나이트(예: 백마법사의 의지)는 유지
                             if seaz_cookie_changed or (not cur_seaz) or (cur_seaz not in seaz_options):
                                 st.session_state[seaz_widget_key] = seaz_preferred if seaz_preferred in seaz_options else seaz_options[0]
                             st.session_state[seaz_prev_key] = party_cookie_name
@@ -1948,9 +1891,9 @@ with st.container(key="outer_shell", border=False):
                         st.rerun()
 
                     render_ctl_label("Theme")
-                    # 테마는 별도 상태(ui_theme)에 저장한다.
-                    # system은 브라우저의 prefers-color-scheme 값을 따라가고,
-                    # light/dark는 사용자가 앱에서 직접 고정한 값으로 적용한다.
+                    # 테마 상태 저장
+                    # 기기 설정 테마 연동
+                    # 사용자 테마 고정
                     if st.session_state.get("ui_theme") not in THEME_OPTIONS:
                         st.session_state.ui_theme = "system"
                     if st.session_state.get("ui_theme_widget") not in THEME_OPTIONS:
@@ -2001,8 +1944,8 @@ with st.container(key="outer_shell", border=False):
                 progress_slot.markdown(_progress_html(0), unsafe_allow_html=True)
 
                 def cb(p: float):
-                    # 메인 쿠키 최적화는 전체 진행률의 80%까지 사용하고,
-                    # 남은 20%에서 파티 쿠키 딜 기여도를 계산한다.
+                    # 메인 쿠키 최적화 진행률 80% 구간
+                    # 남은 20%에서 파티 쿠키 딜 기여도를 계산
                     p = max(0.0, min(1.0, float(p)))
                     progress_slot.markdown(_progress_html(int(p * 80)), unsafe_allow_html=True)
 
@@ -2315,14 +2258,12 @@ with st.container(key="outer_shell", border=False):
                 else:
                     raise ValueError(f"지원하지 않는 kind_cookie: {kind_cookie}")
 
-                # -----------------------------------------------------
                 # 공통 후처리(필요한 것만)
-                # -----------------------------------------------------
                 # 서포터류 잠재 고정
                 if isinstance(best, dict) and best_kind in ("isle", "char", "neon") and potential_override_local is None:
                     best["potentials"] = {"elem_atk": 2, "atk_pct": 2, "buff_amp": 4}
                 elif isinstance(best, dict) and best_kind == "moonlight":
-                    # 달술 잠재는 유니크/장비/시즈 선택에 따라 최적화 함수에서 자동 배분한다.
+                    # 달술 잠재는 유니크/장비/시즈 선택에 따라 최적화 함수에서 자동 배분
                     best["potentials"] = dict(best.get("potentials") or {})
 
                 if isinstance(best, dict):
@@ -2465,7 +2406,7 @@ with st.container(key="outer_shell", border=False):
                         p_df = pretty_potentials(best.get("potentials", {}))
                         s_df = pretty_shards(best.get("shards", {}))
                     elif kind in ("isle", "neon"):
-                        # 달빛술사는 위 일반 분기에서 자체 고정 잠재(7공퍼/1디벞)를 표시한다.
+                        # 달빛술사는 위 일반 분기에서 자체 고정 잠재(7공퍼/1디벞)를 표시
                         pot = best.get("potentials") or {"elem_atk": 2, "atk_pct": 2, "buff_amp": 4}
                         p_df = pretty_potentials(pot)
                         s_df = pretty_shards(best.get("shards", {}))
@@ -2504,8 +2445,8 @@ with st.container(key="outer_shell", border=False):
                             "사이클 내 딜 기여도",
                             df,
                             small=False,
-                            # Cycle Contribution 표는 Item / Damage / Ratio(%)를 정확히 1:1:1로 표시
-                            #       가로 스크롤 없이 현재 RESULT 폭 안에서 고정 비율로 나눈다.
+                            # 사이클 기여도 열 비율 1:1:1
+                            # 결과 폭 기준 고정 비율 분할
                             col_widths=(1, 1, 1),
                         )
 
@@ -2529,7 +2470,7 @@ with st.container(key="outer_shell", border=False):
                 st.caption(f"{_tr_text('실행:')} {st.session_state.last_run}")
 
 # =====================================================
-# 전체 안내문 위치: outer_shell 바깥
+# 전체 안내문
 # =====================================================
 _note_copyright = (
     "Copyright for the CookieRun: Tower of Adventures resources used in THE ABYSS RAID COOKIE LAB belongs to Devsisters."

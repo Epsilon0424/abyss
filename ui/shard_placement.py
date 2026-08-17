@@ -5312,19 +5312,33 @@ body.cs-theme-dark #clear-pieces-btn:hover {{
     transform: none !important;
 }}
 
-/* 배치 결과·인식된 조각 배경 통일 */
+/* 배치 결과·인식된 조각 빈 상태 배경 */
 .cs-result-card .cs-empty-result,
-#recognized-piece-palette,
 #recognized-piece-palette > .cs-empty-result {{
     background: #f6f7f9 !important;
     background-color: #f6f7f9 !important;
 }}
+#recognized-piece-palette {{
+    background: transparent !important;
+    background-color: transparent !important;
+}}
+#recognized-piece-palette:has(> .cs-empty-result) {{
+    background: #f6f7f9 !important;
+    background-color: #f6f7f9 !important;
+}}
 body.cs-theme-dark .cs-result-card .cs-empty-result,
-body.cs-theme-dark #recognized-piece-palette,
 body.cs-theme-dark #recognized-piece-palette > .cs-empty-result {{
     background: #303236 !important;
     background-color: #303236 !important;
     color: #f3f4f6 !important;
+}}
+body.cs-theme-dark #recognized-piece-palette {{
+    background: transparent !important;
+    background-color: transparent !important;
+}}
+body.cs-theme-dark #recognized-piece-palette:has(> .cs-empty-result) {{
+    background: #303236 !important;
+    background-color: #303236 !important;
 }}
 body.cs-theme-dark #recognized-piece-palette > .cs-empty-result *,
 body.cs-theme-dark .cs-result-card .cs-empty-result * {{
@@ -5348,11 +5362,18 @@ body.cs-theme-dark .cs-result-card .cs-empty-result * {{
         transform: none !important;
     }}
     body.cs-theme-system .cs-result-card .cs-empty-result,
-    body.cs-theme-system #recognized-piece-palette,
     body.cs-theme-system #recognized-piece-palette > .cs-empty-result {{
         background: #303236 !important;
         background-color: #303236 !important;
         color: #f3f4f6 !important;
+    }}
+    body.cs-theme-system #recognized-piece-palette {{
+        background: transparent !important;
+        background-color: transparent !important;
+    }}
+    body.cs-theme-system #recognized-piece-palette:has(> .cs-empty-result) {{
+        background: #303236 !important;
+        background-color: #303236 !important;
     }}
     body.cs-theme-system #recognized-piece-palette > .cs-empty-result *,
     body.cs-theme-system .cs-result-card .cs-empty-result * {{

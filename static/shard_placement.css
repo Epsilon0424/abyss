@@ -2371,7 +2371,8 @@ body.cs-theme-dark #clear-pieces-btn:hover {
     border-radius: 10px !important;
 }
 #recognized-piece-palette {
-    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
 }
 body.cs-theme-dark .cs-result-card .cs-empty-result,
 body.cs-theme-dark #recognized-piece-palette,

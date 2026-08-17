@@ -1756,7 +1756,7 @@ textarea,
     padding: 2px 2px !important;
     font-size: 12px !important;
     line-height: 16px !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
     box-sizing: border-box !important;
     background: #fff !important;
 }}
@@ -2185,7 +2185,7 @@ body > div[style*="z-index: 3000"] .piece-preview {{
     min-height: 76px !important;
     background: #fff !important;
     border: 0 !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
@@ -4945,7 +4945,7 @@ body.cs-theme-dark .cs-stat-edit-menu::-webkit-scrollbar-track {{
     padding-right: 0 !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
 }}
@@ -4954,7 +4954,7 @@ body.cs-theme-dark .cs-stat-edit-menu::-webkit-scrollbar-track {{
     max-width: none !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
     box-sizing: border-box !important;
 }}
 

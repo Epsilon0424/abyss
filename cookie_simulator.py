@@ -1,15 +1,14 @@
 # =====================================================
-# Imports
+# 가져오기
 # =====================================================
-"""기존 `import cookie_simulator` 흐름을 유지하기 위한 호환 래퍼."""
+"""쿠키 시뮬레이터 호환 모듈"""
 
 from typing import Callable, Optional
 
 from cookie import *  # noqa: F401,F403
 
-
 # =====================================================
-# Party damage contribution
+# 파티 쿠키 딜 기여도
 # =====================================================
 def calculate_party_damage_contributions(
     best: dict,
@@ -17,13 +16,7 @@ def calculate_party_damage_contributions(
     support_step: int = 2,
     progress_cb: Optional[Callable[[float], None]] = None,
 ) -> dict:
-    """현재 메인/파티 설정 기준으로 팀원별 동일 시간 딜 기여도를 계산한다.
-
-    메인 쿠키는 이미 계산된 ``best`` 결과를 그대로 사용하고, 파티 쿠키는
-    세부사항에서 선택한 장비/시즈나이트/유니크를 고정한 상태로 각 쿠키의
-    기존 최적화 함수를 다시 사용한다. 각 팀원의 딜은 메인 쿠키의 1사이클
-    시간에 맞춰 DPS로 환산해 비교한다.
-    """
+    """파티 쿠키 딜 기여도 계산"""
 
     def emit(value: float) -> None:
         if not progress_cb:
@@ -43,22 +36,10 @@ def calculate_party_damage_contributions(
         return {"reference_time": 0.0, "members": [], "total_damage": 0.0, "errors": []}
 
     party = []
-    seen = set()
-    duplicate_main_count = 0
     for name in best.get("party", []) or []:
         cookie_name = str(name or "").strip()
-        if not cookie_name:
-            continue
-        if cookie_name == main_cookie:
-            # 추가 딜러에서 메인과 같은 쿠키를 선택한 경우 한 명의 별도 파티원으로 유지한다.
-            # UI상 추가 딜러 슬롯은 한 칸이므로 중복 메인은 최대 1명만 허용한다.
-            if duplicate_main_count == 0:
-                party.append(cookie_name)
-                duplicate_main_count = 1
-            continue
-        if cookie_name not in seen:
+        if cookie_name:
             party.append(cookie_name)
-            seen.add(cookie_name)
 
     try:
         reference_time = float(best.get("cycle_total_time", 30.0) or 30.0)
@@ -143,8 +124,8 @@ def calculate_party_damage_contributions(
     party_count = len(party)
 
     for index, cookie_name in enumerate(party):
-        # 메인과 같은 쿠키를 추가 딜러로 선택한 경우에는 메인과 동일 세팅/동일 DPS의
-        # 두 번째 파티원으로 계산한다. 이름 기반 설정 dict 충돌도 피할 수 있다.
+        # 메인 중복 딜러 동일 세팅·동일 피해량 적용
+        # 이름 기반 설정 충돌 방지
         if cookie_name == main_cookie:
             members.append({
                 "cookie": cookie_name,

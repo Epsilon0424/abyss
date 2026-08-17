@@ -4946,7 +4946,8 @@ body.cs-theme-dark .cs-stat-edit-menu::-webkit-scrollbar-track {{
     margin-left: 0 !important;
     margin-right: 0 !important;
     border-radius: 10px !important;
-    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
     box-sizing: border-box !important;
 }}
 #recognized-piece-palette > .cs-empty-result {{

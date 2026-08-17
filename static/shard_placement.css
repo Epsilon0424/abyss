@@ -2368,7 +2368,7 @@ body.cs-theme-dark #clear-pieces-btn:hover {
 #recognized-piece-palette > .cs-empty-result {
     background: #f6f7f9 !important;
     background-color: #f6f7f9 !important;
-    border-radius: 6px !important;
+    border-radius: 10px !important;
 }
 #recognized-piece-palette {
     overflow: hidden !important;

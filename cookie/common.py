@@ -245,23 +245,34 @@ def apply_leaf_glide(stats: Dict[str, float], party: List[str], main_cookie_name
 # - 아군 모든 속성 피해 → 버프 증폭·업타임 적용 축
 # =====================================================
 
+def _is_seaz_passive_active(
+    owner_cookie_name: Optional[str],
+    seaz_name: str,
+    party: Optional[List[str]] = None,
+    main_cookie_name: Optional[str] = None,
+) -> bool:
+    # 자체 회복 미사용 서포터의 회복 발동형 시즈는 밀키웨이의 치유의 별이 있을 때만 발동
+    if owner_cookie_name not in ("이슬맛 쿠키", "달빛술사 쿠키") or not isinstance(seaz_name, str):
+        return True
+    if not (seaz_name.endswith(":작은 성배") or seaz_name.endswith(":가벼운 손길")):
+        return True
+    return main_cookie_name == "밀키웨이맛 쿠키" or "밀키웨이맛 쿠키" in (party or [])
+
 def apply_seaz_passive(
     stats: Dict[str, float],
     seaz_name: str,
     uptime_key_prefix: str = "SEAZ_PASSIVE::",
     *,
-    owner_cookie_name: Optional[str] = None,   # 이 시즈의 소유자
-    main_cookie_name: Optional[str] = None,    # 지금 메인 쿠키
+    owner_cookie_name: Optional[str] = None,
+    main_cookie_name: Optional[str] = None,
+    party: Optional[List[str]] = None,
 ) -> Dict[str, float]:
     info = SEAZNITES.get(seaz_name)
     if not info:
         return stats
 
-    # 이슬맛 쿠키는 "작은 성배 / 가벼운 손길" 사용 시
-    # 시즈 보조 옵션 전용
-    if owner_cookie_name == "이슬맛 쿠키" and isinstance(seaz_name, str):
-        if seaz_name.endswith(":작은 성배") or seaz_name.endswith(":가벼운 손길"):
-            return stats
+    if not _is_seaz_passive_active(owner_cookie_name, seaz_name, party, main_cookie_name):
+        return stats
 
     passive = dict(info.get("passive", {}) or {})
 
@@ -1732,8 +1743,9 @@ def apply_party_buffs(
         # 1) 파티 시즈 공용 패시브
         apply_seaz_passive(
             stats, seaz,
-            owner_cookie_name=cookie_name,      # 파티원(그 쿠키)의 시즈
-            main_cookie_name=main_cookie_name   # 현재 메인
+            owner_cookie_name=cookie_name,
+            main_cookie_name=main_cookie_name,
+            party=party,
         )
 
         # 2) 파티 시즈 보조 옵션 규칙
@@ -1750,7 +1762,8 @@ def apply_party_buffs(
 
         # 3) 파티 시즈 패시브 직접 스탯 추가
         passive = info.get("passive", {}) or {}
-        if passive:
+        passive_active = _is_seaz_passive_active(cookie_name, seaz, party, main_cookie_name)
+        if passive and passive_active:
             for k in ("basic_dmg", "special_dmg", "ult_dmg", "passive_dmg", "final_dmg", "atk_spd", "move_spd"):
                 if k in passive:
                     stats[k] = float(stats.get(k, 0.0)) + float(passive[k])
@@ -2791,17 +2804,19 @@ def build_stats_for_combo(
 
             # 시즈 패시브 중복 적용 방지
             passive = seaz.get("passive", {}) or {}
+            passive_active = _is_seaz_passive_active(cookie_name_kr, seaz_name, party, cookie_name_kr)
 
             # 시즈 패시브 미처리 항목 보완
-            if "final_dmg" in passive:
+            if passive_active and "final_dmg" in passive:
                 stats["final_dmg"] += float(passive["final_dmg"])
 
-            for k in ["basic_dmg", "special_dmg", "ult_dmg", "passive_dmg"]:
-                if k in passive:
-                    add_stat(stats, k, float(passive[k]))
+            if passive_active:
+                for k in ["basic_dmg", "special_dmg", "ult_dmg", "passive_dmg"]:
+                    if k in passive:
+                        add_stat(stats, k, float(passive[k]))
 
-            if "final_dmg_stack" in passive and "max_stacks" in passive:
-                stats["final_dmg"] += float(passive["final_dmg_stack"]) * float(passive["max_stacks"])
+                if "final_dmg_stack" in passive and "max_stacks" in passive:
+                    stats["final_dmg"] += float(passive["final_dmg_stack"]) * float(passive["max_stacks"])
 
     # =====================================================
     # 설유(일반 41칸)
@@ -2879,7 +2894,8 @@ def build_stats_for_combo(
         apply_seaz_passive(
             stats, seaz_name,
             owner_cookie_name=cookie_name_kr,
-            main_cookie_name=cookie_name_kr
+            main_cookie_name=cookie_name_kr,
+            party=party,
         )
 
     apply_leaf_glide(stats, party, cookie_name_kr)

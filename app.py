@@ -86,6 +86,7 @@ from ui.assets import (
     _icon_for_potential_stat,
     _icon_for_role,
     _icon_for_seaz,
+    _icon_for_season,
     _icon_for_theme,
     _icon_data_uri,
     selectbox_with_left_icon,
@@ -111,10 +112,13 @@ st.set_page_config(page_title="THE ABYSS RAID COOKIE LAB", layout="wide")
 # - 기기 설정: 브라우저 색상 설정 연동
 # - 라이트·다크: 사용자 고정
 THEME_OPTIONS = ("system", "light", "dark")
+SEASON_OPTIONS = ("season1", "season2", "season3", "season4")
 if st.session_state.get("ui_theme") not in THEME_OPTIONS:
     st.session_state.ui_theme = "system"
 if st.session_state.get("ui_theme_widget") not in THEME_OPTIONS:
     st.session_state.ui_theme_widget = st.session_state.ui_theme
+if st.session_state.get("ui_season_widget") not in SEASON_OPTIONS:
+    st.session_state.ui_season_widget = "season4"
 
 def _sync_ui_theme_from_widget() -> None:
     picked = st.session_state.get("ui_theme_widget", st.session_state.get("ui_theme", "system"))
@@ -135,8 +139,25 @@ def _theme_mode_label(mode: str) -> str:
     labels = labels_en if _english_on() else labels_ko
     return labels.get(mode, mode)
 
+def _season_mode_label(mode: str) -> str:
+    labels_ko = {
+        "season1": "시즌 1",
+        "season2": "시즌 2",
+        "season3": "시즌 3",
+        "season4": "시즌 4",
+    }
+    labels_en = {
+        "season1": "Season 1",
+        "season2": "Season 2",
+        "season3": "Season 3",
+        "season4": "Season 4",
+    }
+    labels = labels_en if _english_on() else labels_ko
+    return labels.get(mode, mode)
+
 inject_styles()
 init_session_state()
+sim.set_active_unique_season(st.session_state.get("ui_season_widget", "season4"))
 
 # =====================================================
 # 메인 쿠키 잠재력 설정
@@ -434,8 +455,83 @@ def _icon_for_party_unique(unique_name: str, party_cookie_name: str) -> str | No
     return _icon_for_role("ALL")
 
 def _party_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
-    # 메인 딜러 유니크 1개 고정
-    # 파티 쿠키 유니크는 세부 설정에서 직접 선택 가능하게 유지
+    """파티 쿠키 유니크 조각 후보"""
+    season = str(getattr(sim, "get_active_unique_season", lambda: "season4")() or "season4")
+    if season == "season1":
+        support_options = [
+            "데스파라거스의 기억",
+            "정화된 에메랄딘의 기억",
+        ]
+        striker_options = [
+            "나비스의 기억",
+            "윈드파라거스 쿠키의 기억",
+        ]
+        if cookie_name in ("이슬맛 쿠키", "샬롯맛 쿠키", "네온데니쉬맛 쿠키"):
+            return support_options, "정화된 에메랄딘의 기억"
+        if cookie_name == "달빛술사 쿠키":
+            return support_options, "데스파라거스의 기억"
+        if cookie_name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키", "스테인드누가맛 쿠키"):
+            return striker_options, "나비스의 기억"
+        if str(getattr(sim, "COOKIE_ROLE", {}).get(cookie_name, "")).lower() == "dps":
+            return _main_unique_options_for_cookie(cookie_name)
+        return [], ""
+
+    if season == "season2":
+        support_options = [
+            "블랙베리맛 쿠키의 기억",
+            "버터밀크맛 쿠키의 기억",
+            "콜라비맛 쿠키의 기억",
+            "웨어울프맛 쿠키의 기억",
+            "오래된 샬롯맛 쿠키의 기억",
+        ]
+        striker_options = [
+            "연금술사맛 쿠키의 기억",
+            "선데맛 쿠키의 기억",
+            "웨어울프맛 쿠키의 기억",
+            "오래된 샬롯맛 쿠키의 기억",
+        ]
+        support_preferred = {
+            "이슬맛 쿠키": "블랙베리맛 쿠키의 기억",
+            "샬롯맛 쿠키": "버터밀크맛 쿠키의 기억",
+            "네온데니쉬맛 쿠키": "블랙베리맛 쿠키의 기억",
+            "달빛술사 쿠키": "콜라비맛 쿠키의 기억",
+        }
+        striker_preferred = {
+            "윈드파라거스 쿠키": "선데맛 쿠키의 기억",
+            "룽샤맛 쿠키": "선데맛 쿠키의 기억",
+            "마블베리맛 쿠키": "선데맛 쿠키의 기억",
+            "밀키웨이맛 쿠키": "선데맛 쿠키의 기억",
+            "체리콜라맛 쿠키": "선데맛 쿠키의 기억",
+            "스테인드누가맛 쿠키": "선데맛 쿠키의 기억",
+        }
+        if cookie_name in support_preferred:
+            return support_options, support_preferred[cookie_name]
+        if cookie_name in striker_preferred:
+            return striker_options, striker_preferred[cookie_name]
+        if str(getattr(sim, "COOKIE_ROLE", {}).get(cookie_name, "")).lower() == "dps":
+            return _main_unique_options_for_cookie(cookie_name)
+        return [], ""
+
+    if season == "season3":
+        support_options = [
+            "크러쉬드페퍼맛 쿠키의 기억",
+            "체리맛 쿠키의 기억",
+            "불야성의 밤의 기억",
+        ]
+        striker_options = [
+            "마라맛 쿠키의 기억",
+            "룽샤맛 쿠키의 기억",
+        ]
+        if cookie_name in ("이슬맛 쿠키", "샬롯맛 쿠키", "네온데니쉬맛 쿠키"):
+            return support_options, "크러쉬드페퍼맛 쿠키의 기억"
+        if cookie_name == "달빛술사 쿠키":
+            return support_options, "불야성의 밤의 기억"
+        if cookie_name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키", "스테인드누가맛 쿠키"):
+            return striker_options, "룽샤맛 쿠키의 기억"
+        if str(getattr(sim, "COOKIE_ROLE", {}).get(cookie_name, "")).lower() == "dps":
+            return _main_unique_options_for_cookie(cookie_name)
+        return [], ""
+
     support_options = [
         "로드 나이트메어의 기억",
         "멜랑크림 쿠키의 순수한 기억",
@@ -445,97 +541,134 @@ def _party_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
         "밀키웨이맛 쿠키의 기억",
         "꿈열차에 실린 기억",
     ]
-
     if cookie_name == "이슬맛 쿠키":
         return support_options, "멜랑크림 쿠키의 순수한 기억"
-
     if cookie_name == "달빛술사 쿠키":
         return support_options, "달빛술사 쿠키의 기억"
-
     if cookie_name in ("샬롯맛 쿠키", "네온데니쉬맛 쿠키"):
         return support_options, "멜랑크림 쿠키의 순수한 기억"
-
     if cookie_name in ("윈드파라거스 쿠키", "룽샤맛 쿠키", "마블베리맛 쿠키", "밀키웨이맛 쿠키", "체리콜라맛 쿠키", "스테인드누가맛 쿠키"):
         return striker_options, "꿈열차에 실린 기억"
-
     if str(getattr(sim, "COOKIE_ROLE", {}).get(cookie_name, "")).lower() == "dps":
         return _main_unique_options_for_cookie(cookie_name)
-
     return [], ""
 
 def _main_unique_options_for_cookie(cookie_name: str) -> tuple[list[str], str]:
     """메인 쿠키 유니크 조각 후보"""
-    # 메인 쿠키는 역할 기준으로 유니크 후보 표시
-    # - 딜러: 딜러 유니크 3종 + 공용 유니크
-    # - 스트라이커: 스트라이커 유니크 2종 + 공용 유니크
-    # - 서포터: 서포터 유니크 3종 + 공용 유니크
-    dps_options = [
-        "로드 나이트메어의 뒤틀린 기억",
-        "스타더스트 쿠키의 기억",
-        "꿈세계의 기억",
-        "새벽을 여는 달빛술사 쿠키의 기억",
-    ]
-    striker_options = [
-        "밀키웨이맛 쿠키의 기억",
-        "꿈열차에 실린 기억",
-        "새벽을 여는 달빛술사 쿠키의 기억",
-    ]
-    support_options = [
-        "로드 나이트메어의 기억",
-        "멜랑크림 쿠키의 순수한 기억",
-        "달빛술사 쿠키의 기억",
-        "새벽을 여는 달빛술사 쿠키의 기억",
-    ]
-
-    dps_preferred = {
-        "멜랑크림 쿠키": "스타더스트 쿠키의 기억",
-        "흑보리맛 쿠키": "로드 나이트메어의 뒤틀린 기억",
-        "샤이닝베리맛 쿠키": "스타더스트 쿠키의 기억",
-        "피닉스페퍼 쿠키": "로드 나이트메어의 뒤틀린 기억",
-        "블루멜로우맛 쿠키": "로드 나이트메어의 뒤틀린 기억",
-        "스타더스트 쿠키": "로드 나이트메어의 뒤틀린 기억",
-        "잭프루트맛 쿠키": "스타더스트 쿠키의 기억",
-    }
-    striker_preferred = {
-        "윈드파라거스 쿠키": "꿈열차에 실린 기억",
-        "룽샤맛 쿠키": "꿈열차에 실린 기억",
-        "마블베리맛 쿠키": "꿈열차에 실린 기억",
-        "밀키웨이맛 쿠키": "꿈열차에 실린 기억",
-        "체리콜라맛 쿠키": "꿈열차에 실린 기억",
-        "스테인드누가맛 쿠키": "꿈열차에 실린 기억",
-    }
-    support_preferred = {
-        "이슬맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
-        "샬롯맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
-        "네온데니쉬맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
-        "달빛술사 쿠키": "달빛술사 쿠키의 기억",
-    }
-
+    season = str(getattr(sim, "get_active_unique_season", lambda: "season4")() or "season4")
     role = getattr(sim, "COOKIE_ROLE", {}).get(cookie_name, "")
-    if role == "dps":
-        opts = dps_options
-        preferred = dps_preferred.get(cookie_name, opts[0])
-    elif role == "strike":
-        opts = striker_options
-        preferred = striker_preferred.get(cookie_name, opts[0])
-    elif role == "support":
-        opts = support_options
-        preferred = support_preferred.get(cookie_name, opts[0])
-    else:
-        opts = []
-        preferred = ""
+    attack_type = getattr(sim, "COOKIE_TYPE", {}).get(cookie_name, "")
 
-    # 실제 정의된 유니크만 표시 + 중복 제거
+    if season == "season1":
+        if role == "dps":
+            first = "로스베이컨맛 쿠키의 기억" if attack_type in {"shoot", "magic"} else "아르고의 기억"
+            opts = [first, "슈가스타의 기억", "용감한 쿠키의 기억"]
+            preferred = first
+        elif role == "strike":
+            opts = ["나비스의 기억", "윈드파라거스 쿠키의 기억", "슈가스타의 기억", "용감한 쿠키의 기억"]
+            preferred = "나비스의 기억"
+        elif role == "support":
+            opts = ["데스파라거스의 기억", "정화된 에메랄딘의 기억", "슈가스타의 기억", "용감한 쿠키의 기억"]
+            preferred = "데스파라거스의 기억" if cookie_name == "달빛술사 쿠키" else "정화된 에메랄딘의 기억"
+        else:
+            opts = []
+            preferred = ""
+    elif season == "season2":
+        if role == "dps":
+            first = "샬롯맛 쿠키의 기억" if attack_type in {"shoot", "magic"} else "다크초코 쿠키의 기억"
+            opts = [first, "웨어울프맛 쿠키의 기억", "오래된 샬롯맛 쿠키의 기억"]
+            preferred = first
+        elif role == "strike":
+            opts = ["연금술사맛 쿠키의 기억", "선데맛 쿠키의 기억", "웨어울프맛 쿠키의 기억", "오래된 샬롯맛 쿠키의 기억"]
+            preferred = "선데맛 쿠키의 기억"
+        elif role == "support":
+            opts = ["블랙베리맛 쿠키의 기억", "버터밀크맛 쿠키의 기억", "콜라비맛 쿠키의 기억", "웨어울프맛 쿠키의 기억", "오래된 샬롯맛 쿠키의 기억"]
+            preferred = {
+                "이슬맛 쿠키": "블랙베리맛 쿠키의 기억",
+                "샬롯맛 쿠키": "버터밀크맛 쿠키의 기억",
+                "네온데니쉬맛 쿠키": "블랙베리맛 쿠키의 기억",
+                "달빛술사 쿠키": "콜라비맛 쿠키의 기억",
+            }.get(cookie_name, "블랙베리맛 쿠키의 기억")
+        else:
+            opts = []
+            preferred = ""
+    elif season == "season3":
+        if role == "dps":
+            first = "피닉스페퍼 쿠키의 기억" if attack_type in {"shoot", "magic"} else "폭주한 룽샤맛 쿠키의 기억"
+            opts = [first, "꺼지지 않는 봉화의 기억", "칠리맛 쿠키의 기억"]
+            preferred = first
+        elif role == "strike":
+            opts = ["룽샤맛 쿠키의 기억", "마라맛 쿠키의 기억", "칠리맛 쿠키의 기억"]
+            preferred = "룽샤맛 쿠키의 기억"
+        elif role == "support":
+            opts = ["크러쉬드페퍼맛 쿠키의 기억", "체리맛 쿠키의 기억", "불야성의 밤의 기억", "칠리맛 쿠키의 기억"]
+            preferred = "불야성의 밤의 기억" if cookie_name == "달빛술사 쿠키" else "크러쉬드페퍼맛 쿠키의 기억"
+        else:
+            opts = []
+            preferred = ""
+    else:
+        dps_options = [
+            "로드 나이트메어의 뒤틀린 기억",
+            "스타더스트 쿠키의 기억",
+            "꿈세계의 기억",
+            "새벽을 여는 달빛술사 쿠키의 기억",
+        ]
+        striker_options = [
+            "밀키웨이맛 쿠키의 기억",
+            "꿈열차에 실린 기억",
+            "새벽을 여는 달빛술사 쿠키의 기억",
+        ]
+        support_options = [
+            "로드 나이트메어의 기억",
+            "멜랑크림 쿠키의 순수한 기억",
+            "달빛술사 쿠키의 기억",
+            "새벽을 여는 달빛술사 쿠키의 기억",
+        ]
+        dps_preferred = {
+            "멜랑크림 쿠키": "스타더스트 쿠키의 기억",
+            "흑보리맛 쿠키": "로드 나이트메어의 뒤틀린 기억",
+            "샤이닝베리맛 쿠키": "스타더스트 쿠키의 기억",
+            "피닉스페퍼 쿠키": "로드 나이트메어의 뒤틀린 기억",
+            "블루멜로우맛 쿠키": "로드 나이트메어의 뒤틀린 기억",
+            "스타더스트 쿠키": "로드 나이트메어의 뒤틀린 기억",
+            "잭프루트맛 쿠키": "스타더스트 쿠키의 기억",
+        }
+        striker_preferred = {
+            "윈드파라거스 쿠키": "꿈열차에 실린 기억",
+            "룽샤맛 쿠키": "꿈열차에 실린 기억",
+            "마블베리맛 쿠키": "꿈열차에 실린 기억",
+            "밀키웨이맛 쿠키": "꿈열차에 실린 기억",
+            "체리콜라맛 쿠키": "꿈열차에 실린 기억",
+            "스테인드누가맛 쿠키": "꿈열차에 실린 기억",
+        }
+        support_preferred = {
+            "이슬맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
+            "샬롯맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
+            "네온데니쉬맛 쿠키": "멜랑크림 쿠키의 순수한 기억",
+            "달빛술사 쿠키": "달빛술사 쿠키의 기억",
+        }
+        if role == "dps":
+            opts = dps_options
+            preferred = dps_preferred.get(cookie_name, opts[0])
+        elif role == "strike":
+            opts = striker_options
+            preferred = striker_preferred.get(cookie_name, opts[0])
+        elif role == "support":
+            opts = support_options
+            preferred = support_preferred.get(cookie_name, opts[0])
+        else:
+            opts = []
+            preferred = ""
+
     unique_defs = getattr(sim, "UNIQUE_SHARDS", {})
     seen = set()
     clean: list[str] = []
-    for x in opts:
-        sx = str(x).strip()
-        if not sx or sx not in unique_defs or sx in seen:
+    for item in opts:
+        name = str(item).strip()
+        if not name or name not in unique_defs or name in seen:
             continue
-        clean.append(sx)
-        seen.add(sx)
-
+        clean.append(name)
+        seen.add(name)
     if preferred not in clean:
         preferred = clean[0] if clean else ""
     return clean, preferred
@@ -1908,6 +2041,19 @@ with st.container(key="outer_shell", border=False):
                         on_change=_sync_ui_theme_from_widget,
                     )
 
+                    render_ctl_label("Season")
+                    if st.session_state.get("ui_season_widget") not in SEASON_OPTIONS:
+                        st.session_state.ui_season_widget = "season4"
+                    _current_season_icon = _icon_for_season(st.session_state.get("ui_season_widget", "season4"))
+                    selectbox_with_left_icon(
+                        label="Season",
+                        options=list(SEASON_OPTIONS),
+                        key="ui_season_widget",
+                        icon_path=_current_season_icon,
+                        icon_px=18,
+                        format_func=_season_mode_label,
+                    )
+
             st.markdown('<hr class="u-divider">', unsafe_allow_html=True)
 
             # 선택한 속성에 쿠키가 없으면 실행 버튼 비활성화
@@ -2464,7 +2610,7 @@ with st.container(key="outer_shell", border=False):
 
                 if kind in ("wind", "melan", "bb", "shining", "phoenix", "lungsha", "marble", "cherry", "blue", "isle", "char", "neon", "moonlight", "milky", "stardust", "jackfruit", "nougat"):
                     with tab4:
-                        render_shard_placement_tab(sugar_target_text, english=(_english_on() or st.session_state.get("ui_language_widget") == "English"), theme_mode=st.session_state.get("ui_theme", "system"), glass_shards=best.get("shards", {}), cookie_name=(best.get("cookie", "") or st.session_state.get("cookie", "")))
+                        render_shard_placement_tab(sugar_target_text, english=(_english_on() or st.session_state.get("ui_language_widget") == "English"), theme_mode=st.session_state.get("ui_theme", "system"), glass_shards=best.get("shards", {}), cookie_name=(best.get("cookie", "") or st.session_state.get("cookie", "")), season_mode=st.session_state.get("ui_season_widget", "season4"))
 
             if st.session_state.last_run:
                 st.caption(f"{_tr_text('실행:')} {st.session_state.last_run}")

@@ -28,6 +28,9 @@ MOONLIGHT_POTENTIAL_DAMAGE_KEYS = (
     "crit_rate", "atk_pct", "elem_atk", "crit_dmg", "armor_pen", "debuff_amp"
 )
 MOONLIGHT_POTENTIAL_FINALISTS_PER_COMBO = 3
+MOONLIGHT_POTENTIAL_PREFILTER_PER_DEBUFF = 12
+MOONLIGHT_POTENTIAL_PREFILTER_OVERALL = 12
+MOONLIGHT_FINAL_SHARD_COARSE_STEP = 2
 
 BASE_STATS_MOONLIGHT = {
     MOONLIGHT_COOKIE: {
@@ -494,16 +497,17 @@ def optimize_moonlight_cycle(
         equip: ([dict(potential_override)] if potential_override is not None else moonlight_allowed_potentials_for_equip(equip))
         for equip in equips
     }
-    screen_total = max(1, sum(len(potential_lists[equip]) * len(uniques) for equip in equips))
-    screened = 0
-    finalists_by_combo: Dict[Tuple[str, str], List[dict]] = {}
+    prefilter_total = max(1, sum(len(potential_lists[equip]) * len(uniques) for equip in equips))
+    prefilter_done = 0
+    prefiltered_by_combo: Dict[Tuple[str, str], List[dict]] = {}
 
     emit(0.01)
 
-    # 1차: 모든 잠재력 조합을 빠른 조각 배분으로 비교
+    # 1차: 조각 0칸 기준으로 전체 잠재력을 빠르게 선별
+    # 디버프 증폭 0~4칸별 상위 후보를 각각 남겨 특정 증폭 구간이 조기에 탈락하지 않도록 함
     for equip_name in equips:
         for unique_name in uniques:
-            bucket: List[dict] = []
+            scored: List[dict] = []
             for pot in potential_lists[equip_name]:
                 template = build_stats_for_combo(
                     cookie_name_kr=cookie,
@@ -522,39 +526,72 @@ def optimize_moonlight_cycle(
                 template["base_hp"] = float(base.get("hp", 0.0))
                 template["base_def"] = float(base.get("def", 0.0))
 
-                screened += 1
+                prefilter_done += 1
                 if not is_valid_by_caps(template):
-                    emit(0.70 * screened / screen_total)
+                    emit(0.25 * prefilter_done / prefilter_total)
                     continue
 
-                shards_quick, stats_quick, cycle_quick = _moonlight_greedy_shards_for_screening(
-                    template, party, artifact_name
-                )
-                cur = {
+                cycle_zero = moonlight_cycle_damage(template, party, artifact_name)
+                scored.append({
                     "equip": equip_name,
                     "unique": unique_name,
                     "potentials": dict(pot),
                     "_template": template,
-                    "_screen_dps": float(cycle_quick["dps"]),
-                    "_screen_shards": shards_quick,
-                    "_screen_stats": stats_quick,
-                }
-                bucket.append(cur)
-                bucket.sort(key=lambda item: float(item.get("_screen_dps", 0.0)), reverse=True)
-                del bucket[MOONLIGHT_POTENTIAL_FINALISTS_PER_COMBO:]
-                emit(0.70 * screened / screen_total)
+                    "_prefilter_dps": float(cycle_zero["dps"]),
+                })
+                emit(0.25 * prefilter_done / prefilter_total)
 
-            finalists_by_combo[(equip_name, unique_name)] = bucket
+            selected: Dict[Tuple[Tuple[str, int], ...], dict] = {}
+            scored.sort(key=lambda item: float(item.get("_prefilter_dps", 0.0)), reverse=True)
 
-    # 2차: 각 장비/유니크 조합의 상위 잠재력만 기존 1칸 정밀 조각 탐색으로 확정
+            for cur in scored[:MOONLIGHT_POTENTIAL_PREFILTER_OVERALL]:
+                key = tuple(sorted((str(k), int(v)) for k, v in cur["potentials"].items()))
+                selected[key] = cur
+
+            for debuff_slots in range(5):
+                group = [
+                    cur for cur in scored
+                    if int(cur["potentials"].get("debuff_amp", 0)) == debuff_slots
+                ]
+                for cur in group[:MOONLIGHT_POTENTIAL_PREFILTER_PER_DEBUFF]:
+                    key = tuple(sorted((str(k), int(v)) for k, v in cur["potentials"].items()))
+                    selected[key] = cur
+
+            prefiltered_by_combo[(equip_name, unique_name)] = list(selected.values())
+
+    # 2차: 선별된 잠재력만 41칸 조각을 빠르게 배분해 실제 DPS 순위를 계산
+    greedy_total = max(1, sum(len(bucket) for bucket in prefiltered_by_combo.values()))
+    greedy_done = 0
+    finalists_by_combo: Dict[Tuple[str, str], List[dict]] = {}
+
+    for combo, candidates in prefiltered_by_combo.items():
+        bucket: List[dict] = []
+        for cur in candidates:
+            shards_quick, stats_quick, cycle_quick = _moonlight_greedy_shards_for_screening(
+                cur["_template"], party, artifact_name
+            )
+            cur["_screen_dps"] = float(cycle_quick["dps"])
+            cur["_screen_shards"] = shards_quick
+            cur["_screen_stats"] = stats_quick
+            bucket.append(cur)
+            bucket.sort(key=lambda item: float(item.get("_screen_dps", 0.0)), reverse=True)
+            del bucket[MOONLIGHT_POTENTIAL_FINALISTS_PER_COMBO:]
+
+            greedy_done += 1
+            emit(0.25 + (0.55 * greedy_done / greedy_total))
+
+        finalists_by_combo[combo] = bucket
+
+    # 3차: 각 장비/유니크 조합의 상위 잠재력만 정밀 조각 탐색으로 확정
     finalists = [item for bucket in finalists_by_combo.values() for item in bucket]
     finalist_total = max(1, len(finalists))
     best: Optional[dict] = None
 
     for index, cur in enumerate(finalists, start=1):
         template = cur["_template"]
+        final_step = max(MOONLIGHT_FINAL_SHARD_COARSE_STEP, int(step or 1))
         shards, stats, cycle = _moonlight_exact_shards_for_template(
-            template, party, artifact_name, step=max(1, int(step or 1))
+            template, party, artifact_name, step=final_step
         )
         support = moonlight_calc_support_metrics(stats)
         result = {
@@ -584,7 +621,7 @@ def optimize_moonlight_cycle(
 
         if best is None or float(result["dps"]) > float(best.get("dps", 0.0)):
             best = result
-        emit(0.70 + (0.30 * index / finalist_total))
+        emit(0.80 + (0.20 * index / finalist_total))
 
     emit(1.0)
     return best

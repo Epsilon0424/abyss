@@ -21,12 +21,11 @@ MOONLIGHT_SELF_CRIT_DMG_ADD = 0.80
 # =====================================================
 # 잠재력 규칙
 # =====================================================
-# - 유성우의 향연: 디버프 증폭 1칸 고정
-# - 시간관리국의 제복: 디버프 증폭 4칸 고정
-# - 잔여 칸 실제 피해량 기준 탐색
-# 가장 높은 조합을 탐색
+# - 장비별 디버프 증폭 고정 없음
+# - 전체 8칸을 실제 DPS 기준으로 탐색
+# - 디버프 증폭은 본인 패시브 피해 증가에 반영
 MOONLIGHT_POTENTIAL_DAMAGE_KEYS = (
-    "crit_rate", "atk_pct", "elem_atk", "crit_dmg", "armor_pen"
+    "crit_rate", "atk_pct", "elem_atk", "crit_dmg", "armor_pen", "debuff_amp"
 )
 MOONLIGHT_POTENTIAL_FINALISTS_PER_COMBO = 3
 
@@ -36,12 +35,11 @@ BASE_STATS_MOONLIGHT = {
         "friendship_atk": friendship_atk_for(MOONLIGHT_COOKIE),
         "def": 419.0,
         "hp": 5153.0,
-        # 환상적인 달의 초대: 본인에게만 신비 속성 공격력 +650
-        "elem_atk": MOONLIGHT_SELF_MYSTIC_ELEM_ATK_ADD,
+        # 환상적인 달의 초대 2성 효과는 파티 역할군에 따라 별도 적용
+        "elem_atk": 0.0,
         "atk_pct": MOONLIGHT_WEAPON_ATK_PCT,
         "crit_rate": 0.15,
-        # 환상적인 달의 초대: 본인에게만 치명타 피해 +80%
-        "crit_dmg": 1.50 + MOONLIGHT_SELF_CRIT_DMG_ADD,
+        "crit_dmg": 1.50,
         "armor_pen": 0.0,
         "final_dmg": 0.05,
         "buff_amp": 0.0,
@@ -49,6 +47,25 @@ BASE_STATS_MOONLIGHT = {
         "debuff_amp": 0.15 + MOONLIGHT_WEAPON_DEBUFF_AMP,
     }
 }
+
+def _moonlight_base_stats_for_party(party: Optional[List[str]]) -> Dict[str, float]:
+    """달빛술사 2성 파티 역할군 효과 적용"""
+    base = BASE_STATS_MOONLIGHT[MOONLIGHT_COOKIE].copy()
+    roles = {
+        str(COOKIE_ROLE.get(name, "") or "").lower()
+        for name in (party or [])
+        if name and name != "없음"
+    }
+
+    # 환상적인 달의 초대: 데미지 딜러 포함 시 신비 속성 공격력 +650
+    if "dps" in roles:
+        base["elem_atk"] = float(base.get("elem_atk", 0.0)) + MOONLIGHT_SELF_MYSTIC_ELEM_ATK_ADD
+
+    # 환상적인 달의 초대: 스트라이커 포함 시 치명타 피해 +80%
+    if "strike" in roles:
+        base["crit_dmg"] = float(base.get("crit_dmg", 1.50)) + MOONLIGHT_SELF_CRIT_DMG_ADD
+
+    return base
 
 # 계수 기준: 업로드 스크린샷
 MOONLIGHT_CYCLE_TIME = 30.0
@@ -89,7 +106,7 @@ MOONLIGHT_CYCLE_TOKENS = [
 
 def moonlight_allowed_equips() -> List[str]:
     # 달빛술사 장비 후보: 유성우/시간셋을 사용
-    # 유성우 디버프 증폭 1칸·시간 세트 4칸 고정 후 피해량 탐색
+    # 잠재력은 장비와 관계없이 실제 DPS 기준으로 탐색
     # 기본값은 유성우의 향연
     return [x for x in ["유성우의 향연", "시간관리국의 제복"] if x in EQUIP_SETS]
 
@@ -103,10 +120,9 @@ def moonlight_allowed_uniques() -> List[str]:
     return [x for x in opts if x in UNIQUE_SHARDS]
 
 def moonlight_allowed_potentials_for_equip(equip_name: str) -> List[Dict[str, int]]:
-    """달빛술사 장비별 잠재력 후보"""
-    fixed_debuff = moonlight_fixed_debuff_slots_for_equip(equip_name)
+    """달빛술사 DPS 기준 잠재력 후보"""
+    del equip_name
     return generate_damage_potential_candidates(
-        fixed={"debuff_amp": fixed_debuff},
         free_keys=MOONLIGHT_POTENTIAL_DAMAGE_KEYS,
     )
 
@@ -456,7 +472,7 @@ def optimize_moonlight_cycle(
     """달빛술사 최적화"""
     cookie = MOONLIGHT_COOKIE
     party = list(party or ["윈드파라거스 쿠키"])
-    base = BASE_STATS_MOONLIGHT[cookie].copy()
+    base = _moonlight_base_stats_for_party(party)
     artifact_name = MOONLIGHT_FIXED_ARTIFACT
 
     equips = _resolve_equip_list_override(equip_override, moonlight_allowed_equips() or [MOONLIGHT_DEFAULT_EQUIP])

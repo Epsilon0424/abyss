@@ -3210,7 +3210,7 @@ def generate_damage_potential_candidates(
         return []
 
     keys = tuple(free_keys or ("crit_rate", "atk_pct", "crit_dmg", "armor_pen"))
-    allowed_free_keys = {"crit_rate", "atk_pct", "elem_atk", "crit_dmg", "armor_pen"}
+    allowed_free_keys = {"crit_rate", "atk_pct", "elem_atk", "crit_dmg", "armor_pen", "debuff_amp"}
     keys = tuple(key for key in keys if key in allowed_free_keys)
     if not keys:
         return [dict(fixed_stats)] if remain == 0 else []

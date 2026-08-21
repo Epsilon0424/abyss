@@ -47,7 +47,7 @@ BASE_STATS_MELAN = {
 # 사이클 및 계수
 # =====================================================
 MELAN_BASIC_NORMAL = [1.704, 1.704, 3.067, 3.408 + 4.544]  # 일반 기본공격 4타 계수
-MELAN_BASIC_ENHANCED = [2.726, 2.726, 4.899, 5.433 + 7.270]  # 강화 기본공격 4타 계수: 272.6%, 272.6%, 489.9%, 543.3%+727.0%
+MELAN_BASIC_ENHANCED = [2.726, 2.726, 4.899, 5.453 + 7.270]  # 강화 기본공격 4타 계수: 272.6%, 272.6%, 489.9%, 545.3%+727.0%
 
 MELAN_SPECIAL_NORMAL_COEFF = (4.26 * 5) + 10.65   # 일반 특수스킬 계수 426% × 5 + 마무리 1065%
 MELAN_SPECIAL_ENHANCED_COEFF = (7.20 * 8) + 16.00 # 강화 특수스킬 계수 720% × 8 + 1600%
@@ -74,7 +74,7 @@ MELAN_SPECIAL_NORMAL_HITS = 6
 MELAN_CYCLE_TOKENS = [
     "U", "B4", "S", "B4", "U",
     "S_ENH", "B4", "B4", "B4", "B4", "B4",
-    "S_ENH", "B4", "B4", "B4", "B4", "B4",
+    "S_ENH", "B4", "B4", "B4", "B4", "B4_NORM",
 ]
 
 MELAN_BASIC_NORMAL_SUM = sum(MELAN_BASIC_NORMAL)
@@ -164,6 +164,12 @@ def _melan_precompute_fast() -> Dict[str, Union[int, float]]:
                 # 일반 기본공격 히트 숨결 누적
                 add_breath_hits(MELAN_BASIC_NORMAL_HITS)
 
+        elif tok == "B4_NORM":
+            # 프리마 종료 후 마지막 일반 기본공격 4타
+            is_prima = False
+            c["b4_norm"] = int(c["b4_norm"]) + 1
+            add_breath_hits(MELAN_BASIC_NORMAL_HITS)
+
     return c
 _MELAN_FAST = _melan_precompute_fast()
 
@@ -229,8 +235,8 @@ def melan_cycle_damage_fast(stats: Dict[str, float], party: List[str]) -> Dict[s
         total_direct += dmg
         breakdown["passive"] += dmg
 
-    # 강화 특수스킬 이후 강화 기본공격 10회·패시브 피해
-    # 강화 기본공격 계수 272.6%·272.6%·489.9%·543.3%+727.0%
+    # 강화 특수스킬 이후 강화 기본공격 9회·패시브 피해
+    # 강화 기본공격 계수 272.6%·272.6%·489.9%·545.3%+727.0%
     if int(c["b4_enhanced"]):
         dmg = skill_damage_from_start(stats, MELAN_BASIC_ENHANCED_SUM, "passive", extra_skill_mult=prima_mult) * int(c["b4_enhanced"])
         total_direct += dmg

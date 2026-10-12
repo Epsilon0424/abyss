@@ -138,6 +138,7 @@ def calculate_party_damage_contributions(
         "스타더스트 쿠키": (optimize_stardust_cycle, 1),
         "잭프루트맛 쿠키": (optimize_jackfruit_cycle, 1),
         "스테인드누가맛 쿠키": (optimize_stained_nougat_cycle, 1),
+        "매드시럽 쿠키": (optimize_mad_syrup_cycle, 1),
         "윈드파라거스 쿠키": (optimize_wind_cycle, 1),
         "룽샤맛 쿠키": (optimize_lungsha_cycle, 1),
         "마블베리맛 쿠키": (optimize_marble_berry_cycle, 1),

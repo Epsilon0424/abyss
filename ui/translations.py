@@ -91,7 +91,7 @@ _ENGLISH_TXT_FALLBACK = r"""
 외딴 별의 여정 : Journey of a Distant Star
 보물의 방향 : Where the Compass Points
 꿈결 같은 휴식 : Dreamlike Breaktime
-끈질긴 역병의 시선 : Gaze of the Lingering Plague
+끈질긴 역병의 시선 : The Plague’s Relentless Gaze
 
 나비스의 기억 : Navis's Memory
 데스파라거스의 기억 : Death Asparagus's Memory
@@ -326,7 +326,7 @@ _EXTRA_ENGLISH = {
     "소다마린": "Sodamarine",
     "보물의 방향": "Where the Compass Points",
     "꿈결 같은 휴식": "Dreamlike Breaktime",
-    "끈질긴 역병의 시선": "Gaze of the Lingering Plague",
+    "끈질긴 역병의 시선": "The Plague’s Relentless Gaze",
     "고요히 흐르는 월광": "Serene Moonlight Flow",
     "꿈의 저편으로": "Toward Dreams' End",
     "외딴 별의 여정": "Journey of a Distant Star",

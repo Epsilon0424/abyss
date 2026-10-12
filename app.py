@@ -1100,7 +1100,9 @@ with st.container(key="outer_shell", border=False):
                 # =====================================================
 
                 # 장비 라벨 + 계산 보정 안내
-                render_main_equip_label_with_adjustment(k, st.session_state.get(ek, ""), [st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")])
+                # 자리만 먼저 잡아 두고, 아래 파티 선택 상자가 모두 그려진 뒤 실제 파티 기준으로 채움
+                # (이 시점에는 파티 선택값이 아직 없거나 이전 값이라 안내 문구가 틀리게 나오던 문제)
+                _equip_label_slot = st.container()
 
                 # =====================================================
                 # 장비 선택 (드롭다운에 "자동" 포함)
@@ -1860,6 +1862,14 @@ with st.container(key="outer_shell", border=False):
                 if dealer_cookie2 != "없음":
                     current_party.append(dealer_cookie2)
                 st.session_state.party = current_party
+
+                # 장비 라벨 + 계산 보정 안내 (파티 선택이 끝난 뒤 위에서 잡아 둔 자리에 표시)
+                with _equip_label_slot:
+                    render_main_equip_label_with_adjustment(
+                        k,
+                        st.session_state.get(ek, ""),
+                        [st.session_state.get(p1k, ""), st.session_state.get(p2k, ""), st.session_state.get(p3k, ""), st.session_state.get(p4k, "")],
+                    )
 
             with detail_tab:
                 with st.container(key="detail_tab_body"):
@@ -2795,7 +2805,7 @@ _note_calc = (
     if _english_on()
     else "일부 스탯은 가산/배율 적용이 함께 반영되어, 단순 합산값과 다를 수 있습니다."
 )
-_note_contact = "For inquiries: Epsilon24@gmail.com" if _english_on() else "기타 문의 : Epsilon24@gmail.com"
+_note_contact = "For inquiries: Jollybright54@gmail.com" if _english_on() else "기타 문의 : Jollybright54@gmail.com"
 st.markdown(
 f"""
 <div class="global-note">

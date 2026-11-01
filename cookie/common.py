@@ -724,11 +724,13 @@ def apply_party_buffs(
     in_party_stardust = ("스타더스트 쿠키" in party)
     in_party_black_barley = ("흑보리맛 쿠키" in party)
     in_party_moonlight = ("달빛술사 쿠키" in party)
+    in_party_sancho = ("산초맛 쿠키" in party)
 
     has_isle = in_party_isle or (main_cookie_name == "이슬맛 쿠키")
     has_wind = in_party_wind or (main_cookie_name == "윈드파라거스 쿠키")
     has_char = in_party_char or (main_cookie_name == "샬롯맛 쿠키")
     has_neon = in_party_neon or (main_cookie_name == "네온데니쉬맛 쿠키")
+    has_sancho = in_party_sancho or (main_cookie_name == "산초맛 쿠키")
     has_lungsha = in_party_lungsha or (main_cookie_name == "룽샤맛 쿠키")
     has_marble = in_party_marble or (main_cookie_name == "마블베리맛 쿠키")
     has_milky = in_party_milky or (main_cookie_name == "밀키웨이맛 쿠키")
@@ -912,6 +914,8 @@ def apply_party_buffs(
             ba += _assumed_charlotte_buff_amp_for_party()
         elif cookie_name == "네온데니쉬맛 쿠키":
             ba += _assumed_neon_buff_amp_for_party()
+        elif cookie_name == "산초맛 쿠키":
+            ba += _assumed_sancho_buff_amp_for_party()
         elif cookie_name == "달빛술사 쿠키":
             moon_unique_raw = ""
             try:
@@ -1092,6 +1096,18 @@ def apply_party_buffs(
                     stats["buff_amp"] = float(stats.get("buff_amp", 0.0)) + add_ba
                     stats["party_buff_amp_total"] = float(stats.get("party_buff_amp_total", 0.0)) + add_ba
 
+        if in_party_sancho and (main_cookie_name != "산초맛 쿠키"):
+            sancho_set = _effective_party_support_set("산초맛 쿠키")
+            if sancho_set == "영원의 대마술사" and _party_set_effect_first_applicable("산초맛 쿠키", sancho_set, "amp"):
+                base = _get_set_effect_base(
+                    "영원의 대마술사",
+                    fallback={"buff_amp": 0.15, "all_elem_dmg": 0.30},
+                )
+                add_ba = float(base.get("buff_amp", 0.0)) + _sum_part_unique_buff_amp("영원의 대마술사")
+                if add_ba:
+                    stats["buff_amp"] = float(stats.get("buff_amp", 0.0)) + add_ba
+                    stats["party_buff_amp_total"] = float(stats.get("party_buff_amp_total", 0.0)) + add_ba
+
         # 달빛술사(서포터): 유성우/황금예복 선택 시 디버프 증폭 반영
         if in_party_moonlight and (main_cookie_name != "달빛술사 쿠키"):
             moon_set = _effective_party_support_set("달빛술사 쿠키") or "시간관리국의 제복"
@@ -1224,6 +1240,30 @@ def apply_party_buffs(
                 _add_party_equip_all_elem_if_same("네온데니쉬맛 쿠키", add_elem)
 
             elif neon_set == "전설의 유령해적" and _party_set_effect_first_applicable("네온데니쉬맛 쿠키", neon_set, "global"):
+                base = _get_set_effect_base(
+                    "전설의 유령해적",
+                    fallback={"all_elem_dmg": 0.30, "def_reduction_raw": 0.05},
+                )
+                add_elem = float(base.get("all_elem_dmg", 0.0))
+                add_def  = float(base.get("def_reduction_raw", 0.0))
+
+                _add_party_equip_all_elem_always(add_elem)
+                if add_def:
+                    stats["def_reduction_no_scale_raw"]  = float(stats.get("def_reduction_no_scale_raw", 0.0)) + add_def
+                    stats["enemy_def_down_raw"] = float(stats.get("enemy_def_down_raw", 0.0)) + add_def
+
+        if in_party_sancho and (main_cookie_name != "산초맛 쿠키"):
+            sancho_set = _effective_party_support_set("산초맛 쿠키")
+
+            if sancho_set == "영원의 대마술사" and _party_set_effect_first_applicable("네온데니쉬맛 쿠키", sancho_set, "all_elem_if_same"):
+                base = _get_set_effect_base(
+                    "영원의 대마술사",
+                    fallback={"buff_amp": 0.15, "all_elem_dmg": 0.30},
+                )
+                add_elem = float(base.get("all_elem_dmg", 0.0))
+                _add_party_equip_all_elem_if_same("산초맛 쿠키", add_elem)
+
+            elif sancho_set == "전설의 유령해적" and _party_set_effect_first_applicable("산초맛 쿠키", sancho_set, "global"):
                 base = _get_set_effect_base(
                     "전설의 유령해적",
                     fallback={"all_elem_dmg": 0.30, "def_reduction_raw": 0.05},
@@ -1456,6 +1496,31 @@ def apply_party_buffs(
 
         # 삼매각화: 적이 받는 궁극기 피해 증가 +35%
         stats["enemy_ult_taken_inc"] = float(stats.get("enemy_ult_taken_inc", 0.0)) + 0.35
+
+    SANCHO_PARTY_FINAL_ATK_BUFF = 0.347
+    SANCHO_PARTY_SPECIAL_DMG_BUFF = 0.1456 + 0.05 # The extra 0.05 accounts for the three-star promotion.
+    SANCHO_PARTY_ARTI_ATK_ADD = 0.2
+    SANCHO_PARTY_ENEMY_SPECIAL_TAKEN_INC = 0.15
+
+    def _apply_sancho_party_effects():
+        if not in_party_sancho:
+            return
+
+        innate_scale = _buff_scale_for_owner("산초맛 쿠키")
+
+        # Swift Precision: 34.7% ATK Increase. 14.56% Special Skill damage increase.
+        add_final_atk = SANCHO_PARTY_FINAL_ATK_BUFF * innate_scale
+        stats["final_atk_mult"] = float(stats.get("final_atk_mult", 0.0)) + add_final_atk
+        stats["buff_final_atk_mult"] = float(stats.get("buff_final_atk_mult", 0.0)) + add_final_atk + SANCHO_PARTY_ARTI_ATK_ADD
+
+        stats["special_dmg"] = float(stats.get("special_dmg", 0.0)) + (
+            SANCHO_PARTY_SPECIAL_DMG_BUFF * innate_scale
+        )
+
+        # 아티팩트 치트키·치명적 오류: 궁극기 받는 피해 증가
+        stats["enemy_special_taken_inc"] = float(stats.get("enemy_special_taken_inc", 0.0)) + (
+            SANCHO_PARTY_ENEMY_SPECIAL_TAKEN_INC := 0.15
+        )
 
     # =====================================================
     # [쿠키] 마블베리맛 쿠키
@@ -1849,6 +1914,7 @@ def apply_party_buffs(
     _apply_once("PARTY_UNIQUE_MILKY",      lambda: _apply_party_member_unique("밀키웨이맛 쿠키"))
     _apply_once("PARTY_UNIQUE_CHERRY_COLA", lambda: _apply_party_member_unique("체리콜라맛 쿠키"))
     _apply_once("PARTY_UNIQUE_STAINED_NOUGAT", lambda: _apply_party_member_unique("스테인드누가맛 쿠키"))
+    _apply_once("PARTY_UNIQUE_SANCHO",      lambda: _apply_party_member_unique("산초맛 쿠키"))
 
     # (1) 쿠키 파티버프/오라
     if has_char:
@@ -1882,6 +1948,9 @@ def apply_party_buffs(
     if has_stained_nougat:
         _apply_once("PARTY_STAINED_NOUGAT", _apply_stained_nougat_party_effects)
 
+    if has_sancho:
+        _apply_once("PARTY_SANCHO", _apply_sancho_party_effects)
+
     # (2) 파티 시즈 패시브
     _apply_once("PARTY_SEAZ_ISLE",       lambda: _apply_party_member_seaz("이슬맛 쿠키"))
     _apply_once("PARTY_SEAZ_CHARLOTTE",  lambda: _apply_party_member_seaz("샬롯맛 쿠키"))
@@ -1894,6 +1963,7 @@ def apply_party_buffs(
     _apply_once("PARTY_SEAZ_CHERRY_COLA", lambda: _apply_party_member_seaz("체리콜라맛 쿠키"))
     _apply_once("PARTY_SEAZ_STAINED_NOUGAT", lambda: _apply_party_member_seaz("스테인드누가맛 쿠키"))
     _apply_once("PARTY_SEAZ_STARDUST", lambda: _apply_party_member_seaz("스타더스트 쿠키"))
+    _apply_once("PARTY_SEAZ_SANCHO",      lambda: _apply_party_member_seaz("산초맛 쿠키"))
 
     # 파티원 증폭값 효과별 계산 전용
     # 메인 쿠키 본인 증폭값 복원
@@ -2100,7 +2170,7 @@ def build_damage_context(stats: Dict[str, float]) -> Dict[str, float]:
     elem_res_mult = 1.0 - eff_resist
 
     basic_mult = (1.0 + float(get("basic_dmg", 0.0))) * (1.0 + float(get("enemy_basic_taken_inc", 0.0)))
-    special_mult = 1.0 + float(get("special_dmg", 0.0))
+    special_mult = (1.0 + float(get("special_dmg", 0.0))) * (1.0 + float(get("enemy_special_taken_inc", 0.0)))
     ult_mult = (1.0 + float(get("ult_dmg", 0.0))) * (1.0 + float(get("enemy_ult_taken_inc", 0.0)))
     passive_mult = (
         (1.0 + float(get("passive_dmg", 0.0)))
@@ -2348,6 +2418,44 @@ def _assumed_neon_buff_amp_for_party() -> float:
 
     return ba
 
+def _assumed_sancho_buff_amp_for_party() -> float:
+    from .sancho import (
+        BASE_STATS_SANCHO,
+        SANCHO_POTENTIALS_FIXED,
+        SANCHO_FIXED_ARTIFACT,
+    )
+
+    ba = 0.0
+
+    try:
+        ba += float(BASE_STATS_SANCHO["산초맛 쿠키"].get("buff_amp", 0.0))
+    except Exception:
+        # 선택 장비/아티팩트 데이터가 없으면 해당 가산값은 0으로 처리
+        pass
+
+    try:
+        ba += float(SANCHO_POTENTIALS_FIXED.get("buff_amp", 0)) * float(POTENTIAL_INC["buff_amp"])
+    except Exception:
+        # 선택 장비/아티팩트 데이터가 없으면 해당 가산값은 0으로 처리
+        pass
+
+    try:
+        a = ARTIFACTS.get(SANCHO_FIXED_ARTIFACT, {})
+        ba += float((a.get("base_stats") or {}).get("buff_amp", 0.0))
+    except Exception:
+        # 선택 장비/아티팩트 데이터가 없으면 해당 가산값은 0으로 처리
+        pass
+
+    try:
+        fixed_seaz = globals().get("FIXED_SEAZ_SANCHO", "허브그린드:작은 성배")
+        seaz = SEAZNITES.get(fixed_seaz, {})
+        ba += float((seaz.get("sub") or {}).get("buff_amp", 0.0))
+    except Exception:
+        # 선택 장비/아티팩트 데이터가 없으면 해당 가산값은 0으로 처리
+        pass
+
+    return ba
+
 MOONLIGHT_DEBUFF_AMP_TARGET = 1.50
 MOONLIGHT_POTENTIAL_SLOTS = 8
 # 달빛술사 증폭 잠재력 합계 최대 4칸
@@ -2504,6 +2612,23 @@ def _apply_neon_main_effects(stats: Dict[str, float], main_cookie_name: str) -> 
     stats["ult_dmg"] = float(stats.get("ult_dmg", 0.0)) + add_ult_dmg
     stats["enemy_ult_taken_inc"] = float(stats.get("enemy_ult_taken_inc", 0.0)) + (0.08 + 0.058)
 
+def _apply_sancho_main_effects(stats: Dict[str, float], main_cookie_name: str) -> None:
+    """산초 메인 효과"""
+    if main_cookie_name != "산초맛 쿠키":
+        return
+
+    BA_total = float(stats.get("buff_amp_total", stats.get("buff_amp", 0.0)))
+    innate_scale = 1.0 + BA_total
+
+    add_final_atk = 0.347 * innate_scale
+    add_special_dmg = 0.1456 * innate_scale
+
+    stats["final_atk_mult"] = float(stats.get("final_atk_mult", 0.0)) + add_final_atk
+    stats["buff_final_atk_mult"] = float(stats.get("buff_final_atk_mult", 0.0)) + add_final_atk
+    stats["special_dmg"] = float(stats.get("special_dmg", 0.0)) + add_special_dmg
+    stats["enemy_special_taken_inc"] = float(stats.get("enemy_special_taken_inc", 0.0)) + (0.15)
+
+
 def _apply_party_amp_totals(stats: Dict[str, float], party: List[str], main_cookie_name: str) -> None:
 
     base_ba = float(stats.get("buff_amp_total", stats.get("buff_amp", 0.0)))
@@ -2566,6 +2691,10 @@ def _apply_party_amp_totals(stats: Dict[str, float], party: List[str], main_cook
     if "네온데니쉬맛 쿠키" in (party or []) and main_cookie_name != "네온데니쉬맛 쿠키":
         ba += _assumed_neon_buff_amp_for_party()
         ba += _selected_party_sub_buff_amp("네온데니쉬맛 쿠키") - _fixed_party_sub_buff_amp("네온데니쉬맛 쿠키")
+
+    if "산초맛 쿠키" in (party or []) and main_cookie_name != "산초맛 쿠키":
+        ba += _assumed_sancho_buff_amp_for_party()
+        ba += _selected_party_sub_buff_amp("산초맛 쿠키") - _fixed_party_sub_buff_amp("산초맛 쿠키")
 
     if "달빛술사 쿠키" in (party or []) and main_cookie_name != "달빛술사 쿠키":
         moon_equip_for_ba = str(party_sets_map.get("달빛술사 쿠키", "") or "")
@@ -2686,6 +2815,7 @@ def build_stats_for_combo(
         "dmg_taken_inc": 0.0,
         "enemy_ult_taken_inc": 0.0,
         "enemy_basic_taken_inc": 0.0,
+        "enemy_special_taken_inc": 0.0,
 
         "recommended_mult": 1.0,
 
@@ -2876,6 +3006,7 @@ def build_stats_for_combo(
 
     _apply_party_amp_totals(stats, party, cookie_name_kr)
     _apply_neon_main_effects(stats, cookie_name_kr)
+    _apply_sancho_main_effects(stats, cookie_name_kr)
     apply_party_buffs(
         stats,
         party,

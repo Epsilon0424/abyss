@@ -39,6 +39,7 @@ _ENGLISH_TXT_FALLBACK = r"""
 잭프루트맛 쿠키: Jackfruit Cookie
 스테인드누가맛 쿠키: Stained Nougat Cookie
 매드시럽 쿠키: Mad Syrup Cookie
+산초맛 쿠키: Sancho Cookie
 
 달콤한 설탕 깃털 : Sugar Feather
 미지의 방랑자 : Mysterious Wanderer
@@ -48,6 +49,7 @@ _ENGLISH_TXT_FALLBACK = r"""
 황금 예복 : Golden Finery
 유성우의 향연 : Falling Stars
 영원의 대마술사 : Eternal Magician
+잊혀진 영웅의 슈트 세트 : Forgotten Hero's
 
 페퍼루비 : Pepper Ruby
 리치코랄 : Lychee Coral
@@ -92,6 +94,7 @@ _ENGLISH_TXT_FALLBACK = r"""
 보물의 방향 : Where the Compass Points
 꿈결 같은 휴식 : Dreamlike Breaktime
 끈질긴 역병의 시선 : The Plague’s Relentless Gaze
+진실을 찾아서 : Finding The Truth
 
 나비스의 기억 : Navis's Memory
 데스파라거스의 기억 : Death Asparagus's Memory

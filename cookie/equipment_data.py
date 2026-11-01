@@ -62,4 +62,11 @@ EQUIP_SETS = {
         "set_effect": { "base": {"buff_amp": 0.15, "all_elem_dmg": 0.30 * weight}
         }
     },
+    "잊혀진 영웅의 슈트 세트": {
+        "head": {"base": {"all_elem_dmg": 0.312}, "unique": {"special_dmg": 0.15}},
+        "top":  {"base": {"def_pct": 0.52},       "unique": {"crit_rate": 0.15}},
+        "bottom":{"base": {"hp_pct": 0.52},       "unique": {"crit_dmg": 0.375}},
+        "set_effect": {"base": {"special_dmg": 0.30}}
+    }
+    
 }

@@ -17,7 +17,7 @@ COOKIE_ELEMENT = {
     "밀키웨이맛 쿠키": "mystic",
     "스타더스트 쿠키": "mystic",
     "잭프루트맛 쿠키": "earth",
-    "스테인드누가맛 쿠키": "earth",\
+    "스테인드누가맛 쿠키": "earth",
     "산초맛 쿠키": "earth",
     "매드시럽 쿠키": "light",
 }

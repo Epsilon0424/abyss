@@ -18,6 +18,7 @@ COOKIE_ELEMENT = {
     "스타더스트 쿠키": "mystic",
     "잭프루트맛 쿠키": "earth",
     "스테인드누가맛 쿠키": "earth",
+    "산초맛 쿠키": "earth",
     "매드시럽 쿠키": "light",
 }
 
@@ -38,6 +39,7 @@ COOKIE_TYPE = {
     "밀키웨이맛 쿠키": "strike",
     "스타더스트 쿠키": "shoot",
     "잭프루트맛 쿠키": "slash",
+    "산초맛 쿠키": "smash",
     "스테인드누가맛 쿠키": "strike",
     "매드시럽 쿠키": "shoot",
 }
@@ -59,6 +61,7 @@ COOKIE_ROLE = {
     "밀키웨이맛 쿠키": "strike",
     "스타더스트 쿠키": "dps",
     "잭프루트맛 쿠키": "dps",
+    "산초맛 쿠키": "support",
     "스테인드누가맛 쿠키": "strike",
     "매드시럽 쿠키": "dps",
 }

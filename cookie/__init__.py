@@ -20,3 +20,4 @@ from .stardust import *  # noqa: F401,F403
 from .jackfruit import *  # noqa: F401,F403
 from .stained_nougat import *  # noqa: F401,F403
 from .mad_syrup import *  # noqa: F401,F403
+from .sancho import *  # noqa: F401,F403

@@ -156,4 +156,11 @@ ARTIFACTS = {
             "dawn_guide_coeff": 12.0 * 3.0,
         },
     },
+
+    "진실을 찾아서": {
+        "base_stats": {"buff_amp": 0.16},
+        "unique_stats": {},
+        "unique_buffs": {},
+        "sancho": {"enemy_special_taken_inc": 0.32, "duration": 15.0},
+    },
 }

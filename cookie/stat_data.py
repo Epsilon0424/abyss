@@ -219,6 +219,7 @@ FRIENDSHIP_ATK = {
     "스타더스트 쿠키": 54.0,
     "잭프루트맛 쿠키": 57.0,
     "스테인드누가맛 쿠키": 51.0,
+    "산초맛 쿠키": 45.0,
 }
 
 def friendship_atk_for(cookie_name: str) -> float:
